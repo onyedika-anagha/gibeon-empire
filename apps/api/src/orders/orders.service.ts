@@ -9,7 +9,7 @@ import {
 import { randomBytes } from "node:crypto";
 import { desc, eq, inArray } from "drizzle-orm";
 import { DRIZZLE, type DrizzleDB } from "../db/db.module";
-import { customers, orderEvents, orderItems, orders, payments, products, variants } from "../db/schema";
+import { customers, orderEvents, orderItems, orders, orderStateEnum, payments, products, variants } from "../db/schema";
 import type { Channel, OrderState } from "../db/schema";
 import { AuditService } from "../common/audit/audit.service";
 import { InventoryService } from "../inventory/inventory.service";
@@ -152,6 +152,17 @@ export class OrdersService {
       throw new ForbiddenException("Not your order");
     }
     return this.getById(order.id);
+  }
+
+  async listAll(state?: string) {
+    const valid = state && (orderStateEnum.enumValues as readonly string[]).includes(state);
+    const rows = await this.db
+      .select()
+      .from(orders)
+      .where(valid ? eq(orders.state, state as OrderState) : undefined)
+      .orderBy(desc(orders.createdAt))
+      .limit(200);
+    return rows;
   }
 
   async listForCustomer(customerId: string) {

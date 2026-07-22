@@ -92,15 +92,15 @@ Derived from [`prd-phase1-commerce-platform.md`](./prd-phase1-commerce-platform.
   - [x] 5.10 Component tests (Vitest + RTL): `useCart.test.tsx`, `CheckoutForm.test.tsx` — 5 tests pass.
   - Backend support added: `OptionalJwtAuthGuard` (attach customer on guest-or-authed checkout) + `GET /orders` (my orders).
 
-- [ ] 6.0 Admin dashboard
-  - [ ] 6.1 Scaffold `apps/admin` (Next.js), RBAC-gated login sharing the staff identity from the API.
-  - [ ] 6.2 Product/variant/SKU management UI (create/edit) — the only human write path for catalogue (Req. 38); no editable slug/code fields per `slug-rule`.
-  - [ ] 6.3 Manual stock-adjustment UI with reason + audit trail (Req. 39).
-  - [ ] 6.4 Staff account management + role assignment UI (Req. 40).
-  - [ ] 6.5 Order oversight: pipeline board, transition actions, order detail (Req. 41).
-  - [ ] 6.6 Payment-provider toggle UI (Paystack ⇄ Flutterwave) (Req. 42, 29).
-  - [ ] 6.7 Offline-oversell review queue: list flagged sales, resolve as backorder/substitution/refund (Req. 42, 37).
-  - [ ] 6.8 Component test for the payment-toggle control and a guarded-route test.
+- [x] 6.0 Admin dashboard
+  - [x] 6.1 `apps/admin` (Next.js, hand-scaffolded), RBAC-gated login via `/auth/staff/login` + `useAdminAuth`; `AdminShell` gates all routes.
+  - [x] 6.2 Product/variant management UI (create + inline price edit) — no slug/code fields per `slug-rule` (Req. 38).
+  - [x] 6.3 Inventory page: low-stock list with inline restock → `/inventory/adjust` (audited) (Req. 39).
+  - [x] 6.4 Staff management UI (list, create, role change) — admin-only; backed by new `/staff` endpoints (Req. 40).
+  - [x] 6.5 Order oversight: filterable list + guarded `advance` through the pipeline; new `GET /orders/admin/all` (Req. 41).
+  - [x] 6.6 Payment-provider toggle UI (Paystack ⇄ Flutterwave), optimistic (Req. 42, 29).
+  - [x] 6.7 Oversell review queue UI + `oversell_reviews` table + `/reviews` endpoints (populated by task 7.8) (Req. 42, 37).
+  - [x] 6.8 Component tests (Vitest+RTL): `PaymentProviderToggle` (switch behavior) + `AdminShell` (guarded route). 2 pass.
 
 - [ ] 7.0 POS offline-first PWA
   - [ ] 7.1 Scaffold `apps/pos` (Next.js PWA), staff login (same RBAC identity), tablet-optimized sale screen.

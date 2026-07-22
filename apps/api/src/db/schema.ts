@@ -35,6 +35,12 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "REFUNDED",
 ]);
 export const mediaKindEnum = pgEnum("media_kind", ["IMAGE", "VIDEO"]);
+export const reviewStatusEnum = pgEnum("review_status", ["PENDING", "RESOLVED"]);
+export const reviewResolutionEnum = pgEnum("review_resolution", [
+  "BACKORDER",
+  "SUBSTITUTION",
+  "REFUND",
+]);
 
 export type Role = (typeof roleEnum.enumValues)[number];
 export type Channel = (typeof channelEnum.enumValues)[number];
@@ -243,6 +249,23 @@ export const auditLogs = pgTable(
   (t) => [index("audit_entity_idx").on(t.entity, t.entityId)],
 );
 
+// Offline oversell conflicts flagged for manual staff review (PRD Req. 37).
+export const oversellReviews = pgTable("oversell_reviews", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  saleClientId: text("sale_client_id"), // POS outbox client id, if applicable
+  variantId: uuid("variant_id")
+    .notNull()
+    .references(() => variants.id),
+  quantity: integer("quantity").notNull(),
+  orderReference: text("order_reference"),
+  status: reviewStatusEnum("status").notNull().default("PENDING"),
+  resolution: reviewResolutionEnum("resolution"),
+  note: text("note"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: text("resolved_by"),
+});
+
 export const schema = {
   staff,
   customers,
@@ -259,4 +282,5 @@ export const schema = {
   payments,
   settings,
   auditLogs,
+  oversellReviews,
 };

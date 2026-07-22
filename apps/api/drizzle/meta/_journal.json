@@ -15,6 +15,13 @@
       "when": 1784710422986,
       "tag": "0001_add_order_contact_email",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784713279639,
+      "tag": "0002_oversell_reviews",
+      "breakpoints": true
     }
   ]
 }

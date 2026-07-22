@@ -11,6 +11,8 @@ import { InventoryModule } from "./inventory/inventory.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { OrdersModule } from "./orders/orders.module";
 import { PaymentsModule } from "./payments/payments.module";
+import { StaffModule } from "./staff/staff.module";
+import { ReviewsModule } from "./reviews/reviews.module";
 import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { RolesGuard } from "./auth/guards/roles.guard";
 
@@ -32,6 +34,8 @@ import { RolesGuard } from "./auth/guards/roles.guard";
     NotificationsModule,
     OrdersModule,
     PaymentsModule,
+    StaffModule,
+    ReviewsModule,
   ],
   providers: [
     // Auth is on by default everywhere; opt out per-route with @Public().

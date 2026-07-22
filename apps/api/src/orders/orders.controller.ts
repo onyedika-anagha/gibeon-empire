@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { OrdersService } from "./orders.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -24,6 +24,13 @@ export class OrdersController {
   @Get()
   mine(@CurrentUser() user: AuthUser) {
     return this.orders.listForCustomer(user.id);
+  }
+
+  // Staff-wide order oversight (PRD Req. 41). Declared before :reference.
+  @Roles("ADMIN", "STORE_MANAGER")
+  @Get("admin/all")
+  adminList(@Query("state") state?: string) {
+    return this.orders.listAll(state);
   }
 
   // Authenticated order tracking (PRD Req. 8) — customer sees own, staff any.
