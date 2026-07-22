@@ -55,6 +55,10 @@ export interface Review {
   createdAt: string;
 }
 
+export type StaffLoginChallenge =
+  | { status: "TOTP_ENROLL"; challenge: string; otpauthUrl: string; qrDataUrl: string }
+  | { status: "TOTP_REQUIRED"; challenge: string };
+
 let token: string | null = null;
 export function setToken(t: string | null) {
   token = t;
@@ -86,7 +90,9 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   staffLogin: (email: string, password: string) =>
-    req<{ accessToken: string }>(`/auth/staff/login`, { method: "POST", body: JSON.stringify({ email, password }) }),
+    req<StaffLoginChallenge>(`/auth/staff/login`, { method: "POST", body: JSON.stringify({ email, password }) }),
+  verifyTotp: (challenge: string, code: string) =>
+    req<{ accessToken: string }>(`/auth/staff/totp/verify`, { method: "POST", body: JSON.stringify({ challenge, code }) }),
   me: () => req<{ id: string; email: string; type: string; role?: Role }>(`/auth/me`),
 
   products: () => req<AdminProduct[]>(`/products`),
@@ -108,6 +114,7 @@ export const api = {
     req<StaffMember>(`/staff`, { method: "POST", body: JSON.stringify(body) }),
   updateStaffRole: (id: string, role: Role) =>
     req<StaffMember>(`/staff/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  resetStaffTotp: (id: string) => req<{ ok: boolean }>(`/staff/${id}/totp/reset`, { method: "POST" }),
 
   getProvider: () => req<{ provider: "PAYSTACK" | "FLUTTERWAVE" }>(`/payments/provider`),
   setProvider: (provider: "PAYSTACK" | "FLUTTERWAVE") =>

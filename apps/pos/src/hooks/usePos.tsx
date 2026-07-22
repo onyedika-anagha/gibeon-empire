@@ -4,6 +4,13 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { api, setToken } from "@/lib/api";
 import { pendingCount, pullSnapshot, pushOutbox } from "@/lib/sync";
 
+export interface PendingTotp {
+  challenge: string;
+  mode: "enroll" | "verify";
+  qrDataUrl?: string;
+  otpauthUrl?: string;
+}
+
 interface Ctx {
   ready: boolean;
   token: string | null;
@@ -11,7 +18,10 @@ interface Ctx {
   online: boolean;
   pending: number;
   lastSync: Date | null;
+  pendingTotp: PendingTotp | null;
   login: (email: string, password: string) => Promise<void>;
+  verifyTotp: (code: string) => Promise<void>;
+  cancelLogin: () => void;
   logout: () => void;
   syncNow: () => Promise<void>;
 }
@@ -26,6 +36,7 @@ export function PosProvider({ children }: { children: ReactNode }) {
   const [online, setOnline] = useState(true);
   const [pending, setPending] = useState(0);
   const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [pendingTotp, setPendingTotp] = useState<PendingTotp | null>(null);
 
   const syncNow = useCallback(async () => {
     if (!navigator.onLine) return;
@@ -97,21 +108,36 @@ export function PosProvider({ children }: { children: ReactNode }) {
     pending,
     lastSync,
     syncNow,
+    pendingTotp,
+    // Step 1: password yields a TOTP challenge, never a session token.
     login: async (e, password) => {
-      const { accessToken } = await api.staffLogin(e, password);
+      const res = await api.staffLogin(e, password);
+      setPendingTotp(
+        res.status === "TOTP_ENROLL"
+          ? { challenge: res.challenge, mode: "enroll", qrDataUrl: res.qrDataUrl, otpauthUrl: res.otpauthUrl }
+          : { challenge: res.challenge, mode: "verify" },
+      );
+    },
+    // Step 2: verify the authenticator code, then open the till session.
+    verifyTotp: async (code) => {
+      if (!pendingTotp) throw new Error("Sign in again");
+      const { accessToken } = await api.verifyTotp(pendingTotp.challenge, code);
       setToken(accessToken);
       const u = await api.me();
       if (u.type !== "staff") throw new Error("Not a staff account");
       localStorage.setItem(KEY, accessToken);
       setTok(accessToken);
       setEmail(u.email);
+      setPendingTotp(null);
       void syncNow();
     },
+    cancelLogin: () => setPendingTotp(null),
     logout: () => {
       localStorage.removeItem(KEY);
       setToken(null);
       setTok(null);
       setEmail(null);
+      setPendingTotp(null);
     },
   };
 

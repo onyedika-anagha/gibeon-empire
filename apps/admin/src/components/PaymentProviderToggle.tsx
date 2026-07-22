@@ -50,7 +50,7 @@ export default function PaymentProviderToggle() {
               disabled={saving}
               onClick={() => choose(p)}
               className={`rounded-lg border px-4 py-3 text-sm font-medium transition disabled:opacity-60 ${
-                isActive ? "border-ink bg-ink text-white" : "border-line text-ink hover:bg-mist"
+                isActive ? "border-primary bg-primary text-primary-foreground" : "border-line text-ink hover:bg-mist"
               }`}
             >
               {p.charAt(0) + p.slice(1).toLowerCase()}

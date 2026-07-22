@@ -57,6 +57,10 @@ export const staff = pgTable("staff", {
   name: text("name").notNull(),
   passwordHash: text("password_hash").notNull(),
   role: roleEnum("role").notNull().default("CASHIER"),
+  // TOTP 2FA (enforced for all staff). Secret is set at enrolment;
+  // totpEnabledAt stays null until the first code is verified.
+  totpSecret: text("totp_secret"),
+  totpEnabledAt: timestamp("totp_enabled_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

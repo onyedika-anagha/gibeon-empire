@@ -7,6 +7,13 @@
             "runtimeArgs": ["run", "dev"],
             "cwd": "apps/storefront",
             "port": 3000
+        },
+        {
+            "name": "admin",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": ["run", "dev"],
+            "cwd": "apps/admin",
+            "port": 3001
         }
     ]
 }

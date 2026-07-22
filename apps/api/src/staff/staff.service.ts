@@ -37,6 +37,16 @@ export class StaffService {
     return member;
   }
 
+  /** Clears a member's TOTP so they must re-enrol on next login (admin recovery). */
+  async resetTotp(id: string, actor: string) {
+    await this.db
+      .update(staff)
+      .set({ totpSecret: null, totpEnabledAt: null, updatedAt: new Date() })
+      .where(eq(staff.id, id));
+    await this.audit.record({ actor, action: "staff.totp_reset", entity: "staff", entityId: id });
+    return { ok: true };
+  }
+
   async updateRole(id: string, role: Role, actor: string) {
     const [member] = await this.db
       .update(staff)

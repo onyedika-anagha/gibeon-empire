@@ -48,6 +48,11 @@ export default function StaffPage() {
     load();
   }
 
+  async function resetTotp(s: StaffMember) {
+    if (!confirm(`Reset 2FA for ${s.name}? They will set up a new authenticator on next sign-in.`)) return;
+    await api.resetStaffTotp(s.id);
+  }
+
   return (
     <>
       <PageHeader title="Staff" subtitle="Accounts and role-based access." />
@@ -59,6 +64,7 @@ export default function StaffPage() {
                 <th className="px-5 py-3">Name</th>
                 <th className="px-5 py-3">Email</th>
                 <th className="px-5 py-3">Role</th>
+                <th className="px-5 py-3 text-right">2FA</th>
               </tr>
             </thead>
             <tbody>
@@ -70,7 +76,7 @@ export default function StaffPage() {
                     <select
                       value={s.role}
                       onChange={(e) => changeRole(s.id, e.target.value as Role)}
-                      className="rounded-lg border border-line bg-white px-2 py-1 text-xs"
+                      className="rounded-lg border border-line bg-surface px-2 py-1 text-xs"
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>
@@ -78,6 +84,14 @@ export default function StaffPage() {
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    <button
+                      onClick={() => resetTotp(s)}
+                      className="text-xs text-slate underline hover:text-danger"
+                    >
+                      Reset
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -96,7 +110,7 @@ export default function StaffPage() {
               <select
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
-                className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
               >
                 {ROLES.map((r) => (
                   <option key={r} value={r}>

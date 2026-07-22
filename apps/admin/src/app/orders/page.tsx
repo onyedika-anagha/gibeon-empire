@@ -54,7 +54,7 @@ export default function OrdersPage() {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink"
+            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink"
           >
             <option value="">All states</option>
             {STATES.map((s) => (

@@ -29,9 +29,15 @@ export type ReconciliationResult =
   | { clientId: string; status: "flagged_oversell"; orderReference: string }
   | { clientId: string; status: "duplicate_ignored" };
 
+export type StaffLoginChallenge =
+  | { status: "TOTP_ENROLL"; challenge: string; otpauthUrl: string; qrDataUrl: string }
+  | { status: "TOTP_REQUIRED"; challenge: string };
+
 export const api = {
   staffLogin: (email: string, password: string) =>
-    req<{ accessToken: string }>(`/auth/staff/login`, { method: "POST", body: JSON.stringify({ email, password }) }),
+    req<StaffLoginChallenge>(`/auth/staff/login`, { method: "POST", body: JSON.stringify({ email, password }) }),
+  verifyTotp: (challenge: string, code: string) =>
+    req<{ accessToken: string }>(`/auth/staff/totp/verify`, { method: "POST", body: JSON.stringify({ challenge, code }) }),
   me: () => req<{ id: string; email: string; type: string; role?: string }>(`/auth/me`),
 
   pull: () => req<{ syncedAt: string; variants: SnapshotVariant[] }>(`/sync/pull`, { method: "POST" }),

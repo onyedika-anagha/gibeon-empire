@@ -9,6 +9,7 @@ import {
   RegisterDto,
   RequestResetDto,
   ResetPasswordDto,
+  TotpVerifyDto,
 } from "./dto/auth.dto";
 
 // Credential endpoints are rate-limited harder than the global default.
@@ -49,6 +50,13 @@ export class AuthController {
   @Post("staff/login")
   staffLogin(@Body() dto: LoginDto) {
     return this.auth.loginStaff(dto);
+  }
+
+  @Public()
+  @HttpCode(200)
+  @Post("staff/totp/verify")
+  verifyTotp(@Body() dto: TotpVerifyDto) {
+    return this.auth.verifyStaffTotp(dto);
   }
 
   /** Returns the authenticated principal — proves the JWT guard works. */

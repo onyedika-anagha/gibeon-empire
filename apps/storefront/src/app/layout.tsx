@@ -18,16 +18,15 @@ export const metadata: Metadata = {
   title: "Gibeon Empire — Effortless Luxury, Thoughtfully Made",
   description:
     "Premium women's luxury fashion. Modern essentials in refined tones and timeless cuts — designed to feel as good as they look.",
+  icons: {
+    icon: "/logo/favicon.ico",
+    apple: "/logo/apple-touch-icon.png",
+  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${display.variable} ${sans.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${display.variable} ${sans.variable} h-full antialiased`}>
       <body className="grain min-h-full bg-cream text-ink flex flex-col">
         <Providers>{children}</Providers>
       </body>

@@ -36,4 +36,9 @@ export class StaffController {
   updateRole(@Param("id") id: string, @Body() dto: UpdateRoleDto, @CurrentUser() user: AuthUser) {
     return this.staff.updateRole(id, dto.role, user.id);
   }
+
+  @Post(":id/totp/reset")
+  resetTotp(@Param("id") id: string, @CurrentUser() user: AuthUser) {
+    return this.staff.resetTotp(id, user.id);
+  }
 }

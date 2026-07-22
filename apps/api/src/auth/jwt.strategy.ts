@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import type { AuthUser, JwtPayload } from "./auth.types";
@@ -16,7 +16,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   // The token is signed and short-lived (JWT_EXPIRES_IN), so we trust its
   // claims rather than hitting the DB on every request. Expiry is the
   // automatic-logout mechanism (PRD NFR: session management).
-  validate(payload: JwtPayload): AuthUser {
+  validate(payload: JwtPayload & { purpose?: string }): AuthUser {
+    // TOTP challenge tokens share the signing secret but are not sessions.
+    if (payload.purpose) throw new UnauthorizedException();
     return {
       id: payload.sub,
       type: payload.type,

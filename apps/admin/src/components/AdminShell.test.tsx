@@ -9,7 +9,7 @@ vi.mock("next/link", () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
 }));
 vi.mock("@/lib/api", () => ({
-  api: { me: vi.fn(), staffLogin: vi.fn() },
+  api: { me: vi.fn(), staffLogin: vi.fn(), verifyTotp: vi.fn() },
   setToken: vi.fn(),
 }));
 
@@ -25,7 +25,8 @@ describe("AdminShell route guard", () => {
       </AdminAuthProvider>,
     );
 
-    await waitFor(() => expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/staff sign in/i)).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
     expect(screen.queryByText(/secret dashboard/i)).not.toBeInTheDocument();
     // Nav links are not rendered before authentication.
     expect(screen.queryByText(/^Overview$/)).not.toBeInTheDocument();

@@ -58,18 +58,18 @@ function TopBar() {
 }
 
 function LoginScreen() {
-  const { login } = usePos();
+  const { login, verifyTotp, cancelLogin, pendingTotp } = usePos();
   const [email, setEmail] = useState("cashier@gibeonempire.com");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function run(fn: () => Promise<void>) {
     setBusy(true);
     setError("");
     try {
-      await login(email, password);
+      await fn();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -77,38 +77,81 @@ function LoginScreen() {
     }
   }
 
+  const inputCls = "w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-ink";
+
   return (
     <div className="grid min-h-screen place-items-center px-4">
-      <form onSubmit={submit} className="w-full max-w-sm rounded-2xl border border-line bg-white p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-line bg-white p-8">
         <div className="text-xl font-semibold tracking-tight text-ink">
           Gibeon<span className="text-gold"> POS</span>
         </div>
-        <p className="mt-1 text-sm text-slate">Till sign in.</p>
-        <div className="mt-6 space-y-4">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-ink"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full rounded-lg border border-line px-3 py-2.5 text-sm outline-none focus:border-ink"
-          />
-          {error && <p className="text-sm text-danger">{error}</p>}
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full rounded-lg bg-ink py-2.5 text-sm font-medium text-white disabled:opacity-50"
-          >
-            {busy ? "Signing in…" : "Sign in"}
-          </button>
-        </div>
-      </form>
+
+        {!pendingTotp ? (
+          <>
+            <p className="mt-1 text-sm text-slate">Till sign in.</p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void run(() => login(email, password));
+              }}
+              className="mt-6 space-y-4"
+            >
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className={inputCls} />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className={inputCls} />
+              {error && <p className="text-sm text-danger">{error}</p>}
+              <button type="submit" disabled={busy} className="w-full rounded-lg bg-ink py-2.5 text-sm font-medium text-white disabled:opacity-50">
+                {busy ? "Checking…" : "Continue"}
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <p className="mt-1 text-sm text-slate">
+              {pendingTotp.mode === "enroll" ? "Set up two-factor authentication" : "Enter your authenticator code"}
+            </p>
+            {pendingTotp.mode === "enroll" && pendingTotp.qrDataUrl && (
+              <div className="mt-5 flex flex-col items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={pendingTotp.qrDataUrl} alt="TOTP QR code" className="h-40 w-40 rounded-lg bg-white p-2" />
+                <p className="text-center text-xs text-slate">Scan with your authenticator app, then enter the 6-digit code.</p>
+              </div>
+            )}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void run(() => verifyTotp(code));
+              }}
+              className="mt-5 space-y-4"
+            >
+              <input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="000000"
+                autoFocus
+                className={`${inputCls} text-center text-lg tracking-[0.4em]`}
+              />
+              {error && <p className="text-sm text-danger">{error}</p>}
+              <button type="submit" disabled={busy || code.length !== 6} className="w-full rounded-lg bg-ink py-2.5 text-sm font-medium text-white disabled:opacity-50">
+                {busy ? "Verifying…" : pendingTotp.mode === "enroll" ? "Activate & sign in" : "Verify"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCode("");
+                  setError("");
+                  cancelLogin();
+                }}
+                className="w-full text-xs text-slate underline hover:text-ink"
+              >
+                Back to sign in
+              </button>
+            </form>
+          </>
+        )}
+      </div>
     </div>
   );
 }
