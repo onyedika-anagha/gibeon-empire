@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* Scan the shared UI package so its Tailwind classes are generated. */
+@source "../../../../packages/ui/src";
+
+/* ── Gibeon Empire · Editorial Luxury design tokens ───────────────── */
+@theme {
+  --color-ivory: #fcf9f4;
+  --color-cream: #f6f0e7;
+  --color-sand: #ece3d6;
+  --color-blush: #e7d3c7;
+  --color-taupe: #8c8178;
+  --color-stone: #6b6259;
+  --color-espresso: #3a322b;
+  --color-ink: #1f1b17;
+  --color-gold: #a98763;
+  --color-gold-soft: #c4a985;
+
+  --font-display: var(--font-display), "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: var(--font-sans), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-xl2: 1.75rem;
+}
+
+:root {
+  --background: #f6f0e7;
+  --foreground: #1f1b17;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Fine film-grain overlay for a physical, editorial paper feel */
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-ivory);
+}
+
+/* Announcement marquee */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee { animation: marquee 32s linear infinite; }
+
+/* Slow ambient drift for hero light */
+@keyframes drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(2%, -3%, 0) scale(1.06); }
+}
+.animate-drift { animation: drift 16s ease-in-out infinite; }
+
+.hairline { border: 1px solid color-mix(in oklab, var(--color-ink) 8%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee, .animate-drift { animation: none; }
+  html { scroll-behavior: auto; }
+}

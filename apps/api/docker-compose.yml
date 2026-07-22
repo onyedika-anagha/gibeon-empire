@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gibeon-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gibeon
+      POSTGRES_PASSWORD: gibeon
+      POSTGRES_DB: gibeon
+    ports:
+      - "55432:5432"
+    volumes:
+      - gibeon_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gibeon"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: gibeon-redis
+    restart: unless-stopped
+    ports:
+      - "56379:6379"
+
+volumes:
+  gibeon_pgdata:
