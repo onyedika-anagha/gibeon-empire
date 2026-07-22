@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post } from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { Public } from "./decorators/public.decorator";
 import { CurrentUser } from "./decorators/current-user.decorator";
@@ -10,6 +11,8 @@ import {
   ResetPasswordDto,
 } from "./dto/auth.dto";
 
+// Credential endpoints are rate-limited harder than the global default.
+@Throttle({ default: { ttl: 60000, limit: 10 } })
 @Controller("auth")
 export class AuthController {
   constructor(private readonly auth: AuthService) {}

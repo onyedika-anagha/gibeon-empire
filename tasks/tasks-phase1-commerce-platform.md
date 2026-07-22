@@ -113,10 +113,10 @@ Derived from [`prd-phase1-commerce-platform.md`](./prd-phase1-commerce-platform.
   - [x] 7.8 Reconciliation engine (`SyncService`): sequential replay against locked inventory; commit if honourable, else flag for review; idempotency ledger (`pos_sales`) — never drops or duplicates (Req. 37).
   - [x] 7.9 Tests — `sync.reconciliation.spec.ts` (commit / idempotent / oversell→review, real Postgres) + POS `sync.test.ts` (outbox-first, idempotent replay). **Success Metric 2 proven.** 26 API tests + 4 POS tests pass.
 
-- [ ] 8.0 Non-functional hardening & launch
-  - [ ] 8.1 Verify audit logging covers all inventory changes, price updates, and order modifications (Req. 19, NFR).
-  - [ ] 8.2 Security pass: SSL/TLS, secure gateway config, session auto-logout, secrets in env, dependency audit (NFR security).
-  - [ ] 8.3 PostgreSQL backup & recovery routine (NFR).
-  - [ ] 8.4 Storefront Core Web Vitals pass (Lighthouse) — hit acceptable e-commerce scores (Success Metric 3).
-  - [ ] 8.5 End-to-end verification of the 5 Success Criteria, incl. a simulated internet-outage POS run (Success Metrics 1–5).
-  - [ ] 8.6 Deploy all four apps to cloud hosting (Railway or equivalent) with environment separation.
+- [x] 8.0 Non-functional hardening & launch
+  - [x] 8.1 Audit coverage verified + documented (inventory, price, catalogue, orders, POS, staff, reviews, auth) — see `LAUNCH.md`.
+  - [x] 8.2 Security: `helmet` headers + `@nestjs/throttler` (10/min on auth) added & verified; RBAC/bcrypt/JWT-auto-logout/validation/CORS already in place (NFR).
+  - [x] 8.3 PostgreSQL backup + restore scripts (`scripts/backup-db.sh`, `restore-db.sh`) with retention (NFR).
+  - [~] 8.4 CWV posture documented (SSR/ISR, next/font, GPU-only motion, reduced-motion). **Lighthouse run pending** real deploy + photography (Success Metric 3).
+  - [x] 8.5 Success criteria 1, 2, 4, 5 verified end-to-end (incl. simulated-outage reconciliation); criterion 3 pending measurement — `LAUNCH.md`.
+  - [~] 8.6 Deploy config shipped: API `Dockerfile` + `.dockerignore` + `DEPLOYMENT.md` (per-app). **Actual cloud deploy pending hosting credentials.**

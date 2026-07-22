@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { BullModule } from "@nestjs/bullmq";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { APP_GUARD } from "@nestjs/core";
 import { DbModule } from "./db/db.module";
 import { AuditModule } from "./common/audit/audit.module";
@@ -20,6 +21,8 @@ import { RolesGuard } from "./auth/guards/roles.guard";
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Baseline rate limiting (PRD NFR: security). Login routes tighten this further.
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
     BullModule.forRoot({
       connection: {
         host: process.env.REDIS_HOST ?? "localhost",
@@ -40,6 +43,8 @@ import { RolesGuard } from "./auth/guards/roles.guard";
     SyncModule,
   ],
   providers: [
+    // Rate limiter runs first.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     // Auth is on by default everywhere; opt out per-route with @Public().
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     // Runs after JwtAuthGuard; enforces @Roles() where present.

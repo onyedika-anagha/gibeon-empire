@@ -1,12 +1,16 @@
 import "reflect-metadata";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import helmet from "helmet";
 import { AppModule } from "./app.module";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 
 async function bootstrap() {
   // rawBody enables signature verification of payment webhooks.
   const app = await NestFactory.create(AppModule, { bufferLogs: false, rawBody: true });
+
+  // Secure HTTP headers (PRD NFR: security).
+  app.use(helmet());
 
   app.setGlobalPrefix("api");
 
