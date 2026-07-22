@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
 import { OrdersService } from "./orders.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { OptionalJwtAuthGuard } from "../auth/guards/optional-jwt-auth.guard";
 import type { AuthUser } from "../auth/auth.types";
 import { AdvanceOrderDto, CreateOrderDto } from "./dto/order.dto";
 
@@ -10,11 +11,19 @@ import { AdvanceOrderDto, CreateOrderDto } from "./dto/order.dto";
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 
-  // Public so guests can check out (PRD Req. 5). Optional bearer attaches the customer.
+  // Public so guests can check out (PRD Req. 5). A valid bearer attaches the customer.
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @Post()
-  create(@Body() dto: CreateOrderDto) {
-    return this.orders.create(dto, undefined, "system");
+  create(@Body() dto: CreateOrderDto, @CurrentUser() user?: AuthUser) {
+    const customerId = user?.type === "customer" ? user.id : undefined;
+    return this.orders.create(dto, customerId, user?.id ?? "system");
+  }
+
+  // A logged-in customer's own order history (PRD Req. 7, 8).
+  @Get()
+  mine(@CurrentUser() user: AuthUser) {
+    return this.orders.listForCustomer(user.id);
   }
 
   // Authenticated order tracking (PRD Req. 8) — customer sees own, staff any.

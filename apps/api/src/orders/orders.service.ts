@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { randomBytes } from "node:crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { DRIZZLE, type DrizzleDB } from "../db/db.module";
 import { customers, orderEvents, orderItems, orders, payments, products, variants } from "../db/schema";
 import type { Channel, OrderState } from "../db/schema";
@@ -152,6 +152,15 @@ export class OrdersService {
       throw new ForbiddenException("Not your order");
     }
     return this.getById(order.id);
+  }
+
+  async listForCustomer(customerId: string) {
+    const rows = await this.db
+      .select()
+      .from(orders)
+      .where(eq(orders.customerId, customerId))
+      .orderBy(desc(orders.createdAt));
+    return rows;
   }
 
   private async customerEmail(customerId: string | null): Promise<string | undefined> {

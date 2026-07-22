@@ -1,15 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion, useScroll, useMotionValueEvent } from "motion/react";
 import { EASE } from "./motion";
+import { useCart } from "@/hooks/useCart";
 import { IconSearch, IconUser, IconHeart, IconBag } from "./icons";
 
-const LINKS = ["New In", "Women", "Collections", "Atelier", "Journal"];
+const LINKS: Array<[string, string]> = [
+  ["New In", "/shop"],
+  ["Women", "/shop"],
+  ["Collections", "/shop"],
+  ["Atelier", "/shop"],
+  ["Account", "/account"],
+];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { count, setOpen: setCartOpen } = useCart();
   const { scrollY } = useScroll();
 
   useMotionValueEvent(scrollY, "change", (y) => setScrolled(y > 24));
@@ -37,34 +46,41 @@ export default function Navbar() {
               : "bg-transparent"
           }`}
         >
-          <a href="#" className="font-display text-lg tracking-tight text-ink">
+          <Link href="/" className="font-display text-lg tracking-tight text-ink">
             Gibeon<span className="text-gold"> Empire</span>
-          </a>
+          </Link>
 
           <ul className="hidden items-center gap-8 md:flex">
-            {LINKS.map((l) => (
-              <li key={l}>
-                <a
-                  href="#"
+            {LINKS.map(([label, href]) => (
+              <li key={label}>
+                <Link
+                  href={href}
                   className="group relative text-[13px] tracking-wide text-stone transition-colors hover:text-ink"
                 >
-                  {l}
+                  {label}
                   <span className="absolute -bottom-1 left-0 h-px w-0 bg-gold transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:w-full" />
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
 
           <div className="flex items-center gap-1">
             <IconButton label="Search"><IconSearch className="h-[18px] w-[18px]" /></IconButton>
-            <IconButton label="Account" className="hidden sm:inline-flex"><IconUser className="h-[18px] w-[18px]" /></IconButton>
+            <Link
+              href="/account"
+              aria-label="Account"
+              className="hidden h-10 w-10 place-items-center rounded-full text-ink/80 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-ink/5 hover:text-ink active:scale-90 sm:grid"
+            >
+              <IconUser className="h-[18px] w-[18px]" />
+            </Link>
             <IconButton label="Wishlist" className="hidden sm:inline-flex"><IconHeart className="h-[18px] w-[18px]" /></IconButton>
             <button
               aria-label="Cart"
+              onClick={() => setCartOpen(true)}
               className="group relative ml-1 inline-flex items-center gap-2 rounded-full bg-ink py-2 pl-3.5 pr-2 text-ivory transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95"
             >
               <IconBag className="h-[18px] w-[18px]" />
-              <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-ivory/15 px-1.5 text-[11px]">2</span>
+              <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-ivory/15 px-1.5 text-[11px]">{count}</span>
             </button>
 
             <button
@@ -94,21 +110,21 @@ export default function Navbar() {
               variants={{ show: { transition: { staggerChildren: 0.07, delayChildren: 0.12 } } }}
               className="space-y-2"
             >
-              {LINKS.map((l) => (
+              {LINKS.map(([label, href]) => (
                 <motion.li
-                  key={l}
+                  key={label}
                   variants={{
                     hidden: { opacity: 0, y: 24 },
                     show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } },
                   }}
                 >
-                  <a
-                    href="#"
+                  <Link
+                    href={href}
                     onClick={() => setOpen(false)}
                     className="font-display text-5xl tracking-tight text-ink"
                   >
-                    {l}
-                  </a>
+                    {label}
+                  </Link>
                 </motion.li>
               ))}
             </motion.ul>
