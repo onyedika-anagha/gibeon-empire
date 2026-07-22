@@ -1,0 +1,10 @@
+{
+  "name": "Gibeon Empire POS",
+  "short_name": "Gibeon POS",
+  "description": "Offline-first point of sale for Gibeon Empire.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#ffffff",
+  "theme_color": "#14181f"
+}

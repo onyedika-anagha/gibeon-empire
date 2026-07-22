@@ -13,6 +13,7 @@ import { OrdersModule } from "./orders/orders.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { StaffModule } from "./staff/staff.module";
 import { ReviewsModule } from "./reviews/reviews.module";
+import { SyncModule } from "./sync/sync.module";
 import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { RolesGuard } from "./auth/guards/roles.guard";
 
@@ -36,6 +37,7 @@ import { RolesGuard } from "./auth/guards/roles.guard";
     PaymentsModule,
     StaffModule,
     ReviewsModule,
+    SyncModule,
   ],
   providers: [
     // Auth is on by default everywhere; opt out per-route with @Public().

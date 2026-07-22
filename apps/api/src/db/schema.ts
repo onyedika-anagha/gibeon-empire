@@ -41,6 +41,7 @@ export const reviewResolutionEnum = pgEnum("review_resolution", [
   "SUBSTITUTION",
   "REFUND",
 ]);
+export const posSaleStatusEnum = pgEnum("pos_sale_status", ["COMMITTED", "FLAGGED"]);
 
 export type Role = (typeof roleEnum.enumValues)[number];
 export type Channel = (typeof channelEnum.enumValues)[number];
@@ -266,6 +267,16 @@ export const oversellReviews = pgTable("oversell_reviews", {
   resolvedBy: text("resolved_by"),
 });
 
+// Idempotency ledger for offline POS sales — one row per client-generated
+// sale id, so replaying the outbox never creates a duplicate (PRD Req. 34).
+export const posSales = pgTable("pos_sales", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  clientId: text("client_id").notNull().unique(),
+  orderId: uuid("order_id").references(() => orders.id),
+  status: posSaleStatusEnum("status").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const schema = {
   staff,
   customers,
@@ -283,4 +294,5 @@ export const schema = {
   settings,
   auditLogs,
   oversellReviews,
+  posSales,
 };

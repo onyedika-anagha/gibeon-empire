@@ -6,7 +6,6 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { randomBytes } from "node:crypto";
 import { desc, eq, inArray } from "drizzle-orm";
 import { DRIZZLE, type DrizzleDB } from "../db/db.module";
 import { customers, orderEvents, orderItems, orders, orderStateEnum, payments, products, variants } from "../db/schema";
@@ -15,13 +14,9 @@ import { AuditService } from "../common/audit/audit.service";
 import { InventoryService } from "../inventory/inventory.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { canTransition } from "./order-state";
+import { generateReference } from "../common/reference";
 import type { AuthUser } from "../auth/auth.types";
 import type { CreateOrderDto } from "./dto/order.dto";
-
-function generateReference(): string {
-  const stamp = Date.now().toString(36).toUpperCase();
-  return `GE-${stamp}-${randomBytes(2).toString("hex").toUpperCase()}`;
-}
 
 @Injectable()
 export class OrdersService {
