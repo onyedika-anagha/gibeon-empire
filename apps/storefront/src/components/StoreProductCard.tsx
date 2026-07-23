@@ -18,6 +18,7 @@ export default function StoreProductCard({ p }: { p: ApiProduct }) {
   const soldOut = !firstAvailable;
   const priced = firstAvailable ?? p.variants[0];
   const anyLow = p.variants.some((v) => v.stock.state === "low_stock");
+  const image = p.media.find((m) => m.kind === "IMAGE");
 
   function quickAdd() {
     if (!firstAvailable) return;
@@ -40,6 +41,15 @@ export default function StoreProductCard({ p }: { p: ApiProduct }) {
             className="relative aspect-[3/4] overflow-hidden rounded-[calc(1.5rem-0.375rem)]"
             style={{ backgroundImage: `linear-gradient(155deg, ${tone[0]}, ${tone[1]})` }}
           >
+            {image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={image.url}
+                alt={image.alt ?? p.name}
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1.2s] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
+              />
+            )}
             <div className="absolute inset-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]" />
             <div className="absolute left-3 top-3 flex gap-2">
               {soldOut && (

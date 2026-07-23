@@ -58,6 +58,7 @@ export function Field({
 const BADGE_TONE = {
   slate: { variant: "secondary" as const, className: "" },
   gold: { variant: "outline" as const, className: "border-gold/40 text-gold" },
+  warn: { variant: "outline" as const, className: "border-warn/40 text-warn" },
   ok: { variant: "outline" as const, className: "border-ok/40 text-ok" },
   danger: { variant: "destructive" as const, className: "" },
 };

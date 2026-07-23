@@ -1,8 +1,9 @@
 "use client";
 
-import type { Product } from "@/lib/products";
+import Link from "next/link";
+import type { ApiProduct } from "@/lib/api";
 import { Reveal, Stagger } from "./motion";
-import ProductCard from "./ProductCard";
+import StoreProductCard from "./StoreProductCard";
 import { IconArrow } from "./icons";
 
 export default function CollectionSection({
@@ -11,12 +12,14 @@ export default function CollectionSection({
   title,
   blurb,
   products,
+  href = "/shop",
 }: {
   id?: string;
   eyebrow: string;
   title: string;
   blurb: string;
-  products: Product[];
+  products: ApiProduct[];
+  href?: string;
 }) {
   return (
     <section id={id} className="px-4 py-20 md:py-28">
@@ -31,21 +34,18 @@ export default function CollectionSection({
           </Reveal>
 
           <Reveal delay={0.1}>
-            <a
-              href="#"
-              className="group inline-flex items-center gap-2 text-sm text-ink"
-            >
+            <Link href={href} className="group inline-flex items-center gap-2 text-sm text-ink">
               View all
               <span className="grid h-8 w-8 place-items-center rounded-full ring-1 ring-ink/15 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:bg-ink group-hover:text-ivory">
                 <IconArrow className="h-4 w-4" />
               </span>
-            </a>
+            </Link>
           </Reveal>
         </div>
 
         <Stagger className="mt-12 grid grid-cols-2 gap-5 md:grid-cols-4 md:gap-6">
           {products.map((p) => (
-            <ProductCard key={p.name} p={p} />
+            <StoreProductCard key={p.id} p={p} />
           ))}
         </Stagger>
       </div>

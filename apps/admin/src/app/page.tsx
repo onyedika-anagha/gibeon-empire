@@ -42,7 +42,7 @@ export default function Overview() {
 
   const toneColor = {
     primary: "text-primary",
-    warn: "text-gold",
+    warn: "text-warn",
     danger: "text-danger",
   } as const;
 

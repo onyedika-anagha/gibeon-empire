@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, setToken, type Role, type StaffLoginChallenge } from "@/lib/api";
+import { api, setToken, setUnauthorizedHandler, type Role, type StaffLoginChallenge } from "@/lib/api";
 
 /** Second-factor step surfaced to the login UI between password and session. */
 export interface PendingTotp {
@@ -17,6 +17,7 @@ interface Ctx {
   email: string | null;
   role: Role | null;
   pending: PendingTotp | null;
+  expired: boolean;
   login: (email: string, password: string) => Promise<void>;
   verifyTotp: (code: string) => Promise<void>;
   cancelLogin: () => void;
@@ -32,6 +33,22 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role | null>(null);
   const [pending, setPending] = useState<PendingTotp | null>(null);
   const [ready, setReady] = useState(false);
+  const [expired, setExpired] = useState(false);
+
+  // End the session the moment the API rejects our token (expiry/invalid),
+  // rather than leaving a dead dashboard on screen until a manual refresh.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      localStorage.removeItem(KEY);
+      setToken(null);
+      setTok(null);
+      setEmail(null);
+      setRole(null);
+      setPending(null);
+      setExpired(true);
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   useEffect(() => {
     const t = localStorage.getItem(KEY);
@@ -60,6 +77,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     setEmail(u.email);
     setRole(u.role ?? null);
     setPending(null);
+    setExpired(false);
   }
 
   const value: Ctx = {
@@ -68,6 +86,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     email,
     role,
     pending,
+    expired,
     // Step 1: password never yields a session — it hands back a TOTP challenge.
     login: async (e, password) => {
       const res: StaffLoginChallenge = await api.staffLogin(e, password);

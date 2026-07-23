@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { CatalogueService } from "./catalogue.service";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import type { AuthUser } from "../auth/auth.types";
 import {
+  CreateMediaDto,
   CreateProductDto,
   CreateVariantDto,
   ProductQueryDto,
@@ -55,6 +56,19 @@ export class CatalogueController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.catalogue.updateVariant(variantId, dto, user.id);
+  }
+
+  @Roles("ADMIN", "STORE_MANAGER")
+  @Post(":id/media")
+  addMedia(@Param("id") productId: string, @Body() dto: CreateMediaDto, @CurrentUser() user: AuthUser) {
+    return this.catalogue.addMedia(productId, dto, user.id);
+  }
+
+  // "media/:mediaId" is distinct from "variants/:variantId" and the product id routes.
+  @Roles("ADMIN", "STORE_MANAGER")
+  @Delete("media/:mediaId")
+  removeMedia(@Param("mediaId") mediaId: string, @CurrentUser() user: AuthUser) {
+    return this.catalogue.removeMedia(mediaId, user.id);
   }
 
   @Roles("ADMIN", "STORE_MANAGER")

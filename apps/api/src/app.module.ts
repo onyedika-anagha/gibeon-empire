@@ -8,6 +8,7 @@ import { AuditModule } from "./common/audit/audit.module";
 import { SettingsModule } from "./settings/settings.module";
 import { AuthModule } from "./auth/auth.module";
 import { CatalogueModule } from "./catalogue/catalogue.module";
+import { MediaModule } from "./media/media.module";
 import { InventoryModule } from "./inventory/inventory.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { OrdersModule } from "./orders/orders.module";
@@ -35,6 +36,7 @@ import { RolesGuard } from "./auth/guards/roles.guard";
     AuthModule,
     InventoryModule,
     CatalogueModule,
+    MediaModule,
     NotificationsModule,
     OrdersModule,
     PaymentsModule,

@@ -50,3 +50,13 @@ export class TotpVerifyDto {
   @Length(6, 6)
   code!: string;
 }
+
+export class ChangePasswordDto {
+  @IsString()
+  @MinLength(1)
+  currentPassword!: string;
+
+  @IsString()
+  @MinLength(8)
+  newPassword!: string;
+}

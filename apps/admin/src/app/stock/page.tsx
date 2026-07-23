@@ -64,7 +64,7 @@ export default function StockPage() {
                 <tr key={r.variantId} className="border-b border-line last:border-0">
                   <td className="px-5 py-3 font-mono text-xs text-slate">{r.variantId.slice(0, 8)}…</td>
                   <td className="px-5 py-3">
-                    <Badge tone={r.quantity === 0 ? "danger" : "gold"}>{r.quantity}</Badge>
+                    <Badge tone={r.quantity === 0 ? "danger" : "warn"}>{r.quantity}</Badge>
                   </td>
                   <td className="px-5 py-3 text-slate">{r.lowStockThreshold}</td>
                   <td className="px-5 py-3">

@@ -7,30 +7,47 @@ import CategoryGrid from "@/components/CategoryGrid";
 import TrustBadges from "@/components/TrustBadges";
 import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
-import { editorsEdit, seasonEdit } from "@/lib/products";
+import { api, type ApiProduct } from "@/lib/api";
 
-export default function Home() {
+export const dynamic = "force-dynamic"; // homepage reflects the live catalogue
+
+export default async function Home() {
+  let products: ApiProduct[] = [];
+  try {
+    products = await api.products({});
+  } catch {
+    products = []; // API unreachable — sections below simply hide
+  }
+
+  const editors = products.slice(0, 4);
+  const arrivals = products.slice(4, 8);
+  const categories = [...new Set(products.map((p) => p.category))].slice(0, 4);
+
   return (
     <>
       <Navbar />
       <main className="flex-1">
         <Hero />
         <Marquee />
-        <CollectionSection
-          id="collections"
-          eyebrow="Editor's Edit"
-          title="Pieces we're wearing on repeat."
-          blurb="Refined silhouettes in soft, considered tones — the quiet backbone of a modern wardrobe."
-          products={editorsEdit}
-        />
+        {editors.length > 0 && (
+          <CollectionSection
+            id="collections"
+            eyebrow="Editor's Edit"
+            title="Pieces we're wearing on repeat."
+            blurb="Refined silhouettes in soft, considered tones — the quiet backbone of a modern wardrobe."
+            products={editors}
+          />
+        )}
         <EditorialFeature />
-        <CollectionSection
-          eyebrow="Autumn 2025"
-          title="Your go-to picks for the turning season."
-          blurb="Effortless layers for every mood — light, calm, and a little unexpected."
-          products={seasonEdit}
-        />
-        <CategoryGrid />
+        {arrivals.length > 0 && (
+          <CollectionSection
+            eyebrow="New arrivals"
+            title="Fresh in from the atelier."
+            blurb="The latest pieces to land — effortless layers for every mood."
+            products={arrivals}
+          />
+        )}
+        {categories.length > 0 && <CategoryGrid categories={categories} />}
         <TrustBadges />
         <Newsletter />
       </main>

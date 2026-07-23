@@ -15,7 +15,7 @@ import { DRIZZLE, type DrizzleDB } from "../db/db.module";
 import { customers, passwordResets, staff } from "../db/schema";
 import { AuditService } from "../common/audit/audit.service";
 import type { JwtPayload, StaffLoginChallenge, TotpChallengePayload } from "./auth.types";
-import type { LoginDto, RegisterDto, ResetPasswordDto } from "./dto/auth.dto";
+import type { ChangePasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from "./dto/auth.dto";
 
 const SALT_ROUNDS = 12;
 const RESET_TTL_MS = 1000 * 60 * 60; // 1 hour
@@ -191,6 +191,30 @@ export class AuthService {
     }
 
     return this.sign({ sub: member.id, type: "staff", email: member.email, role: member.role });
+  }
+
+  /**
+   * Staff changes their own password. Verifies the current one, rejects a
+   * no-op change, then rehashes. Recorded to the audit trail (never the value).
+   */
+  async changeStaffPassword(userId: string, dto: ChangePasswordDto) {
+    const [member] = await this.db.select().from(staff).where(eq(staff.id, userId));
+    if (!member) throw new UnauthorizedException("Account not found");
+    if (!(await bcrypt.compare(dto.currentPassword, member.passwordHash))) {
+      throw new BadRequestException("Current password is incorrect");
+    }
+    if (await bcrypt.compare(dto.newPassword, member.passwordHash)) {
+      throw new BadRequestException("New password must be different from the current one");
+    }
+    const passwordHash = await bcrypt.hash(dto.newPassword, SALT_ROUNDS);
+    await this.db.update(staff).set({ passwordHash, updatedAt: new Date() }).where(eq(staff.id, userId));
+    await this.audit.record({
+      actor: userId,
+      action: "staff.password_change",
+      entity: "staff",
+      entityId: userId,
+    });
+    return { ok: true };
   }
 
   private signChallenge(

@@ -1,34 +1,110 @@
 @import "tailwindcss";
 
+/* Semantic tokens — resolved from CSS variables that flip with the theme.
+   Warm-neutral grays + a single brand gold, tuned per mode. */
 @theme {
-  --color-ink: #14181f;
-  --color-slate: #59626f;
-  --color-mist: #f0f2f5;
-  --color-line: #dfe3e9;
-  --color-gold: #a9793f;
-  --color-ok: #2f8a57;
-  --color-danger: #c0483c;
-  --color-warn: #b7791f;
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-elev: var(--elev);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
+  --color-ok: var(--ok);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --color-espresso: var(--espresso);
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #14181f;
+  --bg: #faf9f7;
+  --panel: #ffffff;
+  --elev: #f2f0ec;
+  --fg: #1a1714;
+  --muted: #6b6459;
+  --faint: #9a9184;
+  --line: #e7e3dc;
+  --gold: #a9793f;
+  --gold-ink: #8a6026;
+  --ok: #2f8a57;
+  --danger: #c0483c;
+  --warn: #b0791c;
+  --espresso: #3a322b;
+}
+
+html.dark {
+  --bg: #100e0c;
+  --panel: #1a1714;
+  --elev: #241f19;
+  --fg: #ece7df;
+  --muted: #a69c8d;
+  --faint: #776f63;
+  --line: #2c2721;
+  --gold: #cba05b;
+  --gold-ink: #d8b678;
+  --ok: #4bb47c;
+  --danger: #e0685b;
+  --warn: #d3a03c;
+  --espresso: #3a322b;
 }
 
 html {
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  color-scheme: light dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
   user-select: none;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
 }
 
+/* Numeric columns (prices, quantities, counts) stay aligned. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Visible keyboard focus everywhere, no mouse-focus noise. */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Receipt prints clean black-on-white regardless of the on-screen theme. */
 @media print {
+  body * {
+    visibility: hidden;
+  }
+  #receipt,
+  #receipt * {
+    visibility: visible;
+  }
+  #receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    color: #000;
+  }
   .no-print {
     display: none !important;
   }

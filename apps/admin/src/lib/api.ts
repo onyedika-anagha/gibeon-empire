@@ -21,6 +21,12 @@ export interface AdminVariant {
   compareAtPrice?: number | null;
   stock: { variantId: string; state: string; remaining?: number };
 }
+export interface AdminMedia {
+  id: string;
+  url: string;
+  kind: "IMAGE" | "VIDEO";
+  alt?: string | null;
+}
 export interface AdminProduct {
   id: string;
   name: string;
@@ -28,7 +34,25 @@ export interface AdminProduct {
   description: string;
   category: string;
   brand: string;
+  media: AdminMedia[];
   variants: AdminVariant[];
+}
+export interface AuditLog {
+  id: string;
+  actor: string;
+  actorEmail: string | null;
+  action: string;
+  entity: string;
+  entityId: string;
+  data: unknown;
+  createdAt: string;
+}
+export interface UploadSignature {
+  cloudName: string;
+  apiKey: string;
+  timestamp: number;
+  folder: string;
+  signature: string;
 }
 export interface AdminOrder {
   id: string;
@@ -64,6 +88,13 @@ export function setToken(t: string | null) {
   token = t;
 }
 
+// Called when an authenticated request is rejected (expired/invalid session),
+// so the app can end the session immediately instead of showing a dead UI.
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(fn: (() => void) | null) {
+  onUnauthorized = fn;
+}
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -71,6 +102,7 @@ class ApiError extends Error {
 }
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  const authed = Boolean(token); // login/verify calls carry no token
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     cache: "no-store",
@@ -81,6 +113,9 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (!res.ok) {
+    // A 401 on a request that carried a token means the session died —
+    // not a bad-credentials login attempt. End the session.
+    if (res.status === 401 && authed) onUnauthorized?.();
     const body = (await res.json().catch(() => ({}))) as { message?: string | string[] };
     const msg = Array.isArray(body.message) ? body.message.join(", ") : body.message;
     throw new ApiError(res.status, msg ?? `Request failed (${res.status})`);
@@ -99,6 +134,11 @@ export const api = {
   createProduct: (body: unknown) => req<AdminProduct>(`/products`, { method: "POST", body: JSON.stringify(body) }),
   updateVariant: (variantId: string, body: unknown) =>
     req(`/products/variants/${variantId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  addProductMedia: (productId: string, body: { url: string; alt?: string }) =>
+    req<AdminMedia>(`/products/${productId}/media`, { method: "POST", body: JSON.stringify(body) }),
+  deleteProductMedia: (mediaId: string) =>
+    req<{ ok: boolean }>(`/products/media/${mediaId}`, { method: "DELETE" }),
+  signUpload: () => req<UploadSignature>(`/media/sign`, { method: "POST" }),
 
   lowStock: () => req<Array<{ variantId: string; quantity: number; lowStockThreshold: number }>>(`/inventory/low-stock`),
   adjustStock: (body: { variantId: string; mode: "set" | "delta"; value: number; reason: string }) =>
@@ -123,6 +163,17 @@ export const api = {
   reviews: () => req<Review[]>(`/reviews`),
   resolveReview: (id: string, resolution: "BACKORDER" | "SUBSTITUTION" | "REFUND") =>
     req(`/reviews/${id}/resolve`, { method: "POST", body: JSON.stringify({ resolution }) }),
+
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    req<{ ok: boolean }>(`/auth/staff/password`, { method: "PATCH", body: JSON.stringify(body) }),
+
+  auditLogs: (params: { entity?: string; action?: string; limit?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (params.entity) q.set("entity", params.entity);
+    if (params.action) q.set("action", params.action);
+    q.set("limit", String(params.limit ?? 200));
+    return req<AuditLog[]>(`/audit?${q.toString()}`);
+  },
 };
 
 export { ApiError };

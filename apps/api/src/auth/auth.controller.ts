@@ -1,10 +1,11 @@
-import { Body, Controller, Get, HttpCode, Post } from "@nestjs/common";
+import { Body, Controller, ForbiddenException, Get, HttpCode, Patch, Post } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { Public } from "./decorators/public.decorator";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import type { AuthUser } from "./auth.types";
 import {
+  ChangePasswordDto,
   LoginDto,
   RegisterDto,
   RequestResetDto,
@@ -57,6 +58,14 @@ export class AuthController {
   @Post("staff/totp/verify")
   verifyTotp(@Body() dto: TotpVerifyDto) {
     return this.auth.verifyStaffTotp(dto);
+  }
+
+  /** Authenticated staff changes their own password. */
+  @HttpCode(200)
+  @Patch("staff/password")
+  changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: AuthUser) {
+    if (user.type !== "staff") throw new ForbiddenException("Staff only");
+    return this.auth.changeStaffPassword(user.id, dto);
   }
 
   /** Returns the authenticated principal — proves the JWT guard works. */

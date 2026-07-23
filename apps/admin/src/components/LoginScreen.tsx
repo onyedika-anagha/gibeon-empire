@@ -9,7 +9,7 @@ import Monogram from "./Monogram";
 
 /** Two-step staff sign-in: password, then the enforced TOTP second factor. */
 export default function LoginScreen() {
-  const { login, verifyTotp, cancelLogin, pending } = useAdminAuth();
+  const { login, verifyTotp, cancelLogin, pending, expired } = useAdminAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -46,6 +46,12 @@ export default function LoginScreen() {
             Gibeon<span className="text-gold"> Admin</span>
           </span>
         </div>
+
+        {expired && !pending && (
+          <p className="mt-4 rounded-md bg-warn/10 px-3 py-2 text-sm text-warn">
+            Your session expired. Please sign in again.
+          </p>
+        )}
 
         {!pending ? (
           <>

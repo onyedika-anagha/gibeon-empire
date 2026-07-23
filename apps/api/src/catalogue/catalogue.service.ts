@@ -6,6 +6,7 @@ import { AuditService } from "../common/audit/audit.service";
 import { InventoryService } from "../inventory/inventory.service";
 import { generateSku, isUniqueViolation, shortSuffix, slugify } from "../common/slug";
 import type {
+  CreateMediaDto,
   CreateProductDto,
   CreateVariantDto,
   ProductQueryDto,
@@ -170,6 +171,57 @@ export class CatalogueService {
       data: priceChanged ? { from: before.price, to: dto.price } : dto,
     });
     return { id, ...dto };
+  }
+
+  // ── Product media (Cloudinary URLs attached after upload) ───────────
+  async addMedia(productId: string, dto: CreateMediaDto, actor: string) {
+    const [product] = await this.db
+      .select({ id: products.id })
+      .from(products)
+      .where(eq(products.id, productId));
+    if (!product) throw new NotFoundException("Product not found");
+
+    const existing = await this.db
+      .select({ id: productMedia.id })
+      .from(productMedia)
+      .where(eq(productMedia.productId, productId));
+
+    const [media] = await this.db
+      .insert(productMedia)
+      .values({
+        productId,
+        url: dto.url,
+        kind: dto.kind ?? "IMAGE",
+        alt: dto.alt,
+        position: existing.length, // append to the end of the gallery
+      })
+      .returning();
+
+    await this.audit.record({
+      actor,
+      action: "product.media_add",
+      entity: "product",
+      entityId: productId,
+      data: { mediaId: media.id, url: dto.url },
+    });
+    return { id: media.id, url: media.url, kind: media.kind, alt: media.alt };
+  }
+
+  async removeMedia(mediaId: string, actor: string) {
+    const [removed] = await this.db
+      .delete(productMedia)
+      .where(eq(productMedia.id, mediaId))
+      .returning({ id: productMedia.id, productId: productMedia.productId });
+    if (!removed) throw new NotFoundException("Media not found");
+
+    await this.audit.record({
+      actor,
+      action: "product.media_remove",
+      entity: "product",
+      entityId: removed.productId,
+      data: { mediaId },
+    });
+    return { ok: true };
   }
 
   // ── Storefront reads (PRD Req. 1, 2, 10) ────────────────────────────

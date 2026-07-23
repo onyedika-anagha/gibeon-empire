@@ -9,7 +9,7 @@ import Monogram from "./Monogram";
 import ThemeToggle from "./ThemeToggle";
 import LoginScreen from "./LoginScreen";
 
-const NAV = [
+const NAV: [string, string][] = [
   ["Overview", "/"],
   ["Products", "/products"],
   ["Orders", "/orders"],
@@ -28,6 +28,9 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   }
   if (!token) return <LoginScreen />;
 
+  // Audit log is admin-only (the API enforces it too); hide it for other roles.
+  const nav: [string, string][] = role === "ADMIN" ? [...NAV, ["Audit", "/audit"]] : NAV;
+
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="flex w-60 flex-col justify-between border-r border-sidebar-border bg-sidebar px-4 py-6">
@@ -39,7 +42,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
             </span>
           </div>
           <nav className="mt-8 flex flex-col gap-1">
-            {NAV.map(([label, href]) => {
+            {nav.map(([label, href]) => {
               const active = pathname === href;
               return (
                 <Link

@@ -7,7 +7,14 @@ export function setToken(t: string | null) {
   token = t;
 }
 
+// Fired when an authenticated request is rejected (expired/invalid session).
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(fn: (() => void) | null) {
+  onUnauthorized = fn;
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  const authed = Boolean(token); // login/verify calls carry no token
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
@@ -17,6 +24,8 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (!res.ok) {
+    // A 401 on a token-bearing request means the till session died.
+    if (res.status === 401 && authed) onUnauthorized?.();
     const body = (await res.json().catch(() => ({}))) as { message?: string | string[] };
     const msg = Array.isArray(body.message) ? body.message.join(", ") : body.message;
     throw new Error(msg ?? `Request failed (${res.status})`);

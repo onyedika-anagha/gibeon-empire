@@ -95,7 +95,7 @@ export default function OrdersPage() {
                   <td className="px-5 py-3 font-medium text-ink">{o.reference}</td>
                   <td className="px-5 py-3 text-slate">{o.channel}</td>
                   <td className="px-5 py-3">
-                    <Badge tone={o.state === "COMPLETED" ? "ok" : "gold"}>{o.state.replace(/_/g, " ")}</Badge>
+                    <Badge tone={o.state === "COMPLETED" ? "ok" : "warn"}>{o.state.replace(/_/g, " ")}</Badge>
                   </td>
                   <td className="px-5 py-3 text-ink">{formatMoney(o.total)}</td>
                   <td className="px-5 py-3 text-right">

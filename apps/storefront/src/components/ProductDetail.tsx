@@ -19,6 +19,10 @@ export default function ProductDetail({ product }: { product: ApiProduct }) {
   const selected = product.variants.find((v) => v.id === selectedId);
   const soldOut = !selected || selected.stock.state === "sold_out";
 
+  const images = product.media.filter((m) => m.kind === "IMAGE");
+  const [activeImg, setActiveImg] = useState(0);
+  const active = images[activeImg] ?? images[0];
+
   function addToCart() {
     if (!selected || soldOut) return;
     add({
@@ -38,12 +42,36 @@ export default function ProductDetail({ product }: { product: ApiProduct }) {
         initial={{ opacity: 0, y: 24, filter: "blur(8px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         transition={{ duration: 0.9, ease: EASE }}
-        className="aspect-[4/5] overflow-hidden rounded-[2rem] p-1.5 ring-1 ring-ink/5"
       >
-        <div
-          className="h-full w-full rounded-[calc(2rem-0.375rem)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.35)]"
-          style={{ backgroundImage: `linear-gradient(150deg, ${tone[0]}, ${tone[1]})` }}
-        />
+        <div className="aspect-[4/5] overflow-hidden rounded-[2rem] p-1.5 ring-1 ring-ink/5">
+          <div
+            className="relative h-full w-full overflow-hidden rounded-[calc(2rem-0.375rem)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.35)]"
+            style={{ backgroundImage: `linear-gradient(150deg, ${tone[0]}, ${tone[1]})` }}
+          >
+            {active && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={active.url} alt={active.alt ?? product.name} className="absolute inset-0 h-full w-full object-cover" />
+            )}
+          </div>
+        </div>
+
+        {images.length > 1 && (
+          <div className="mt-3 flex gap-2">
+            {images.map((m, i) => (
+              <button
+                key={m.id}
+                onClick={() => setActiveImg(i)}
+                aria-label={`View image ${i + 1}`}
+                className={`h-16 w-14 shrink-0 overflow-hidden rounded-xl ring-1 transition ${
+                  i === activeImg ? "ring-ink" : "ring-ink/10 hover:ring-ink/30"
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={m.url} alt="" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
       </motion.div>
 
       <motion.div
