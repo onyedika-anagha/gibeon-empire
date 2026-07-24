@@ -6,18 +6,21 @@ import { AnimatePresence, motion, useScroll, useMotionValueEvent } from "motion/
 import { EASE } from "./motion";
 import { useCart } from "@/hooks/useCart";
 import { IconSearch, IconUser, IconHeart, IconBag } from "./icons";
+import SearchOverlay from "./SearchOverlay";
 
 const LINKS: Array<[string, string]> = [
   ["New In", "/shop"],
-  ["Women", "/shop"],
-  ["Collections", "/shop"],
-  ["Atelier", "/shop"],
+  ["Corporate", "/shop/corporate-wear"],
+  ["Party", "/shop/party-wear"],
+  ["Shoes", "/shop/shoes"],
+  ["Bags", "/shop/bags"],
   ["Account", "/account"],
 ];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { count, setOpen: setCartOpen } = useCart();
   const { scrollY } = useScroll();
 
@@ -65,7 +68,15 @@ export default function Navbar() {
           </ul>
 
           <div className="flex items-center gap-1">
-            <IconButton label="Search"><IconSearch className="h-[18px] w-[18px]" /></IconButton>
+            <IconButton
+              label="Search"
+              onClick={() => {
+                setOpen(false); // close the mobile menu so both overlays never stack
+                setSearchOpen(true);
+              }}
+            >
+              <IconSearch className="h-[18px] w-[18px]" />
+            </IconButton>
             <Link
               href="/account"
               aria-label="Account"
@@ -136,6 +147,8 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }
@@ -144,14 +157,17 @@ function IconButton({
   children,
   label,
   className = "",
+  onClick,
 }: {
   children: React.ReactNode;
   label: string;
   className?: string;
+  onClick?: () => void;
 }) {
   return (
     <button
       aria-label={label}
+      onClick={onClick}
       className={`grid h-10 w-10 place-items-center rounded-full text-ink/80 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-ink/5 hover:text-ink active:scale-90 ${className}`}
     >
       {children}

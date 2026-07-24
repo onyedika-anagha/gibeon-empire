@@ -5,12 +5,16 @@ import {
   IsOptional,
   IsString,
   IsIn,
+  Max,
   Min,
   MinLength,
   ValidateNested,
 } from "class-validator";
+import { CATEGORY_SLUGS } from "../categories";
 
 // Note: no `slug` or `sku` fields — those are backend-generated (slug-rule).
+
+const CATEGORY_MESSAGE = `category must be one of: ${CATEGORY_SLUGS.join(", ")}`;
 
 export class CreateMediaDto {
   @IsString()
@@ -60,7 +64,7 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
-  @IsString()
+  @IsIn(CATEGORY_SLUGS, { message: CATEGORY_MESSAGE })
   category!: string;
 
   @IsString()
@@ -89,7 +93,7 @@ export class UpdateProductDto {
   description?: string;
 
   @IsOptional()
-  @IsString()
+  @IsIn(CATEGORY_SLUGS, { message: CATEGORY_MESSAGE })
   category?: string;
 
   @IsOptional()
@@ -145,4 +149,10 @@ export class ProductQueryDto {
   @IsOptional()
   @IsString()
   q?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number; // typeahead callers ask for a handful; the shop page omits it
 }

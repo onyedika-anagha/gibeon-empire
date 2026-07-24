@@ -4,12 +4,15 @@ import type { OutboxSale } from "@/lib/db";
 import type { CartLine } from "@/hooks/useSale";
 import { METHODS } from "@/hooks/useSale";
 import { formatMoney } from "@/lib/format";
+import { formatRate } from "@/lib/vat";
 
 interface Props {
   cart: CartLine[];
   count: number;
   subtotal: number;
   discount: number;
+  taxTotal: number;
+  taxRate: number;
   total: number;
   method: OutboxSale["method"];
   onQty: (variantId: string, qty: number) => void;
@@ -23,6 +26,8 @@ export default function CartPanel({
   count,
   subtotal,
   discount,
+  taxTotal,
+  taxRate,
   total,
   method,
   onQty,
@@ -101,6 +106,12 @@ export default function CartPanel({
           <div className="mt-1 flex justify-between text-sm text-muted">
             <span>Discount</span>
             <span className="tnum text-danger">−{formatMoney(discount)}</span>
+          </div>
+        )}
+        {taxTotal > 0 && (
+          <div className="mt-1 flex justify-between text-sm text-muted">
+            <span>VAT ({formatRate(taxRate)})</span>
+            <span className="tnum">{formatMoney(taxTotal)}</span>
           </div>
         )}
         <div className="mt-2 flex items-end justify-between border-t border-dashed border-line pt-3">

@@ -58,6 +58,10 @@ function ProductCard({ v, onAdd }: { v: SnapshotVariant; onAdd: (v: SnapshotVari
       className="group relative flex flex-col rounded-xl border border-line bg-panel p-3 text-left transition hover:-translate-y-0.5 hover:border-gold hover:shadow-[0_10px_30px_-14px_rgba(26,23,20,0.35)] active:translate-y-0 disabled:pointer-events-none disabled:opacity-40"
     >
       <div className="relative aspect-square overflow-hidden rounded-lg bg-gradient-to-br from-elev to-line">
+        {v.image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={v.image} alt={v.productName} className="h-full w-full object-cover" loading="lazy" />
+        )}
         {soldOut && (
           <span className="absolute left-1.5 top-1.5 rounded bg-fg/80 px-1.5 py-0.5 text-[10px] font-medium text-bg">
             Sold out

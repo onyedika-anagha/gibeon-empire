@@ -28,7 +28,8 @@ export interface ApiProduct {
   name: string;
   slug: string;
   description: string;
-  category: string;
+  category: string; // slug — routes on /shop/{category}
+  categoryLabel: string; // display name, resolved by the API
   brand: string;
   media: ApiMedia[];
   variants: ApiVariant[];
@@ -41,6 +42,7 @@ export interface ProductQuery {
   minPrice?: number;
   maxPrice?: number;
   q?: string;
+  limit?: number;
 }
 
 export type OrderState =
@@ -68,7 +70,10 @@ export interface Order {
   contactEmail?: string | null;
   subtotal: number;
   discountTotal: number;
+  taxTotal: number;
+  taxRate: number; // basis points, as charged on this order
   total: number;
+  createdAt?: string;
   items: Array<{ id: string; variantId: string; nameSnapshot: string; unitPrice: number; quantity: number }>;
   events: OrderEvent[];
 }
@@ -106,10 +111,21 @@ function qs(query: object): string {
   return s ? `?${s}` : "";
 }
 
+export interface Category {
+  slug: string;
+  label: string;
+}
+
 export const api = {
   // Catalogue (public, SSR-friendly)
+  categories: (opts?: { revalidate?: number }) =>
+    req<Category[]>(`/products/categories`, { next: { revalidate: opts?.revalidate ?? 3600 } } as RequestInit),
+  taxRate: () => req<{ vatRateBps: number }>(`/settings/tax`, { next: { revalidate: 3600 } } as RequestInit),
   products: (query: ProductQuery = {}, opts?: { revalidate?: number }) =>
     req<ApiProduct[]>(`/products${qs(query)}`, { next: { revalidate: opts?.revalidate ?? 60 } } as RequestInit),
+  // Typeahead — same endpoint as `products`, but uncached and capped.
+  searchProducts: (q: string, init?: RequestInit) =>
+    req<ApiProduct[]>(`/products${qs({ q, limit: 6 })}`, { cache: "no-store", ...init }),
   product: (slug: string, opts?: { revalidate?: number }) =>
     req<ApiProduct>(`/products/${slug}`, { next: { revalidate: opts?.revalidate ?? 60 } } as RequestInit),
   stock: (ids: string[]) =>
@@ -128,6 +144,11 @@ export const api = {
   myOrders: (token: string) => req<Order[]>(`/orders`, { token }),
   trackOrder: (reference: string, token: string) =>
     req<Order>(`/orders/${reference}`, { token }),
+  paymentStatus: (reference: string) =>
+    req<{ reference: string; state: OrderState; paid: boolean }>(
+      `/payments/${encodeURIComponent(reference)}/status`,
+      { cache: "no-store" },
+    ),
   initializePayment: (orderId: string) =>
     req<{ provider: string; reference: string; authorizationUrl: string }>(`/payments/initialize`, {
       method: "POST",

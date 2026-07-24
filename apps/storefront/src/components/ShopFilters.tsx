@@ -2,11 +2,17 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState } from "react";
+import type { Category } from "@/lib/api";
 
-const CATEGORIES = ["Dresses", "Outerwear", "Knitwear", "Atelier"];
 const SIZES = ["XS", "S", "M", "L", "XL"];
 
-export default function ShopFilters() {
+export default function ShopFilters({
+  categories,
+  activeCategory,
+}: {
+  categories: Category[];
+  activeCategory?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -19,12 +25,21 @@ export default function ShopFilters() {
     router.push(`${pathname}?${next.toString()}`);
   }
 
-  const activeCategory = params.get("category") ?? "";
+  // Category is a route, not a query param — /shop/shoes, not /shop?category=shoes.
+  function goToCategory(slug: string) {
+    const next = new URLSearchParams(params.toString());
+    next.delete("category");
+    const qs = next.toString();
+    router.push(`${slug ? `/shop/${slug}` : "/shop"}${qs ? `?${qs}` : ""}`);
+  }
+
   const activeSize = params.get("size") ?? "";
 
   return (
     <div className="space-y-6">
       <form
+        // Remount on a URL-driven ?q= change (e.g. from the navbar overlay) so the field matches.
+        key={params.get("q") ?? ""}
         onSubmit={(e) => {
           e.preventDefault();
           setParam("q", q);
@@ -43,12 +58,12 @@ export default function ShopFilters() {
       </form>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Pill active={!activeCategory} onClick={() => setParam("category", "")}>
+        <Pill active={!activeCategory} onClick={() => goToCategory("")}>
           All
         </Pill>
-        {CATEGORIES.map((c) => (
-          <Pill key={c} active={activeCategory === c} onClick={() => setParam("category", c)}>
-            {c}
+        {categories.map((c) => (
+          <Pill key={c.slug} active={activeCategory === c.slug} onClick={() => goToCategory(c.slug)}>
+            {c.label}
           </Pill>
         ))}
         <span className="mx-1 h-4 w-px bg-ink/10" />

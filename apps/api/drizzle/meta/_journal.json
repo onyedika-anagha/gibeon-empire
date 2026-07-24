@@ -36,6 +36,13 @@
       "when": 1784740630252,
       "tag": "0004_harsh_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784810136414,
+      "tag": "0005_blue_vapor",
+      "breakpoints": true
     }
   ]
 }

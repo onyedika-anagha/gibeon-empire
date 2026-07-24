@@ -13,6 +13,7 @@ import type { Channel, OrderState } from "../db/schema";
 import { AuditService } from "../common/audit/audit.service";
 import { InventoryService } from "../inventory/inventory.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { SettingsService, vatOn } from "../settings/settings.service";
 import { canTransition } from "./order-state";
 import { generateReference } from "../common/reference";
 import type { AuthUser } from "../auth/auth.types";
@@ -25,6 +26,7 @@ export class OrdersService {
     private readonly audit: AuditService,
     private readonly inventory: InventoryService,
     private readonly notifications: NotificationsService,
+    private readonly settings: SettingsService,
   ) {}
 
   // ── Create (web or POS) ─────────────────────────────────────────────
@@ -57,7 +59,11 @@ export class OrdersService {
     });
     const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
     const discountTotal = dto.discountTotal ?? 0;
-    const total = Math.max(0, subtotal - discountTotal);
+    // VAT is charged on the discounted amount and added on top (PRD Req. 9).
+    const taxRate = await this.settings.getVatRateBps();
+    const taxable = Math.max(0, subtotal - discountTotal);
+    const taxTotal = vatOn(taxable, taxRate);
+    const total = taxable + taxTotal;
 
     return this.db.transaction(async (tx) => {
       const [order] = await tx
@@ -69,6 +75,8 @@ export class OrdersService {
           contactEmail: dto.contactEmail,
           subtotal,
           discountTotal,
+          taxTotal,
+          taxRate,
           total,
         })
         .returning();
@@ -124,6 +132,15 @@ export class OrdersService {
       await this.notifications.enqueueOrderConfirmation({
         orderReference: order.reference,
         email,
+        items: order.items.map((i) => ({
+          nameSnapshot: i.nameSnapshot,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+        })),
+        subtotal: order.subtotal,
+        discountTotal: order.discountTotal,
+        taxTotal: order.taxTotal,
+        taxRate: order.taxRate,
         total: order.total,
       });
     }

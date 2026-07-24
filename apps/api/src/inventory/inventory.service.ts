@@ -1,7 +1,7 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { and, eq, inArray, lte, sql } from "drizzle-orm";
 import { DRIZZLE, type DrizzleDB } from "../db/db.module";
-import { inventory, locations } from "../db/schema";
+import { inventory, locations, products, variants } from "../db/schema";
 import { AuditService } from "../common/audit/audit.service";
 
 export type StockState = "in_stock" | "low_stock" | "sold_out";
@@ -188,7 +188,10 @@ export class InventoryService {
     });
   }
 
-  /** Rows at or below their low-stock threshold (PRD Req. 27). */
+  /**
+   * Rows at or below their low-stock threshold (PRD Req. 27), joined with the
+   * catalogue — a restock screen showing bare ids is unusable.
+   */
   async listLowStock() {
     return this.db
       .select({
@@ -196,8 +199,16 @@ export class InventoryService {
         locationId: inventory.locationId,
         quantity: inventory.quantity,
         lowStockThreshold: inventory.lowStockThreshold,
+        sku: variants.sku,
+        size: variants.size,
+        color: variants.color,
+        productName: products.name,
+        productSlug: products.slug,
       })
       .from(inventory)
-      .where(lte(inventory.quantity, inventory.lowStockThreshold));
+      .innerJoin(variants, eq(variants.id, inventory.variantId))
+      .innerJoin(products, eq(products.id, variants.productId))
+      .where(lte(inventory.quantity, inventory.lowStockThreshold))
+      .orderBy(products.name, variants.size);
   }
 }

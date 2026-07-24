@@ -70,6 +70,26 @@ export class PaymentsService {
     return { received: true, processed: !!order };
   }
 
+  /**
+   * Called when the shopper is redirected back from hosted checkout. The redirect proves
+   * nothing, so ask the provider directly and confirm the order if it really paid — the
+   * webhook may not have landed yet (and never does on localhost).
+   */
+  async statusByReference(reference: string) {
+    const order = await this.orderByReference(reference);
+    if (!order) throw new NotFoundException("Order not found");
+    if (order.state !== "RECEIVED") {
+      return { reference, state: order.state, paid: true };
+    }
+
+    const provider = await this.settings.getActiveProvider();
+    const status = await this.getAdapter(provider).verify(reference);
+    if (status !== "success") return { reference, state: order.state, paid: false, status };
+
+    const confirmed = await this.ordersService.confirmPayment(order.id);
+    return { reference, state: confirmed.state, paid: true };
+  }
+
   /** Dev/testing helper to simulate a successful provider callback (guarded). */
   async simulateSuccess(reference: string) {
     const order = await this.orderByReference(reference);

@@ -7,21 +7,19 @@ import CategoryGrid from "@/components/CategoryGrid";
 import TrustBadges from "@/components/TrustBadges";
 import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
-import { api, type ApiProduct } from "@/lib/api";
+import { api, type ApiProduct, type Category } from "@/lib/api";
 
 export const dynamic = "force-dynamic"; // homepage reflects the live catalogue
 
 export default async function Home() {
-  let products: ApiProduct[] = [];
-  try {
-    products = await api.products({});
-  } catch {
-    products = []; // API unreachable — sections below simply hide
-  }
+  // API unreachable — the sections below simply hide.
+  const [products, categories] = await Promise.all([
+    api.products({}).catch((): ApiProduct[] => []),
+    api.categories().catch((): Category[] => []),
+  ]);
 
   const editors = products.slice(0, 4);
   const arrivals = products.slice(4, 8);
-  const categories = [...new Set(products.map((p) => p.category))].slice(0, 4);
 
   return (
     <>

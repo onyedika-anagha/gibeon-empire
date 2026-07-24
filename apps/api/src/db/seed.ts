@@ -20,6 +20,9 @@ async function main() {
     .values({ key: "activePaymentProvider", value: "PAYSTACK" })
     .onConflictDoNothing();
 
+  // Nigerian VAT, 7.5% in basis points (admin-editable in Settings).
+  await db.insert(settings).values({ key: "vatRateBps", value: 750 }).onConflictDoNothing();
+
   // One staff account per role.
   const passwordHash = await bcrypt.hash("password123", 12);
   const seedStaff: Array<{ email: string; name: string; role: Role }> = [
@@ -32,7 +35,7 @@ async function main() {
   }
 
   // eslint-disable-next-line no-console
-  console.log("Seeded: default location, payment setting, 3 staff accounts.");
+  console.log("Seeded: default location, payment + VAT settings, 3 staff accounts.");
   await client.end();
 }
 

@@ -10,12 +10,14 @@ import {
   oversellReviews,
   payments,
   posSales,
+  productMedia,
   products,
   variants,
   type PaymentMethod,
 } from "../db/schema";
 import { AuditService } from "../common/audit/audit.service";
 import { generateReference } from "../common/reference";
+import { SettingsService, vatOn } from "../settings/settings.service";
 
 export interface OutboxSale {
   clientId: string; // client-generated, guarantees idempotency
@@ -35,6 +37,7 @@ export class SyncService {
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly audit: AuditService,
+    private readonly settings: SettingsService,
   ) {}
 
   private locationId?: string;
@@ -56,6 +59,7 @@ export class SyncService {
         size: variants.size,
         color: variants.color,
         price: variants.price,
+        productId: products.id,
         productName: products.name,
         category: products.category,
         quantity: inventory.quantity,
@@ -63,16 +67,35 @@ export class SyncService {
       .from(variants)
       .innerJoin(products, eq(products.id, variants.productId))
       .leftJoin(inventory, and(eq(inventory.variantId, variants.id), eq(inventory.locationId, locationId)));
-    return { syncedAt: new Date().toISOString(), variants: rows };
+
+    // Cover image per product, so the till grid isn't a wall of grey placeholders.
+    const media = await this.db
+      .select({ productId: productMedia.productId, url: productMedia.url, position: productMedia.position })
+      .from(productMedia)
+      .where(eq(productMedia.kind, "IMAGE"));
+    const cover = new Map<string, { url: string; position: number }>();
+    for (const m of media) {
+      const seen = cover.get(m.productId);
+      if (!seen || m.position < seen.position) cover.set(m.productId, m);
+    }
+
+    // The till needs the VAT rate cached too — it prices sales while offline.
+    const vatRateBps = await this.settings.getVatRateBps();
+    return {
+      syncedAt: new Date().toISOString(),
+      vatRateBps,
+      variants: rows.map((r) => ({ ...r, image: cover.get(r.productId)?.url ?? null })),
+    };
   }
 
   /** Replay the offline outbox (PRD Req. 35, 37). Idempotent + oversell-safe. */
   async push(sales: OutboxSale[], actor: string): Promise<ReconciliationResult[]> {
     const locationId = await this.defaultLocation();
+    const taxRate = await this.settings.getVatRateBps();
     const results: ReconciliationResult[] = [];
     // Sequential: preserves the real-world order of offline sales.
     for (const sale of sales) {
-      results.push(await this.reconcileSale(sale, actor, locationId));
+      results.push(await this.reconcileSale(sale, actor, locationId, taxRate));
     }
     return results;
   }
@@ -81,6 +104,7 @@ export class SyncService {
     sale: OutboxSale,
     actor: string,
     locationId: string,
+    taxRate: number,
   ): Promise<ReconciliationResult> {
     return this.db.transaction(async (tx) => {
       // 1. Claim the client id — a duplicate replay conflicts and is ignored.
@@ -104,12 +128,23 @@ export class SyncService {
       const byId = new Map(meta.map((m) => [m.id, m]));
 
       const subtotal = sale.items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
-      const total = Math.max(0, subtotal - sale.discountTotal);
+      // Same VAT rule as online checkout; the till charged this at the point of sale.
+      const taxable = Math.max(0, subtotal - sale.discountTotal);
+      const taxTotal = vatOn(taxable, taxRate);
+      const total = taxable + taxTotal;
       const reference = generateReference();
 
       const [order] = await tx
         .insert(orders)
-        .values({ reference, channel: "POS", subtotal, discountTotal: sale.discountTotal, total })
+        .values({
+          reference,
+          channel: "POS",
+          subtotal,
+          discountTotal: sale.discountTotal,
+          taxTotal,
+          taxRate,
+          total,
+        })
         .returning({ id: orders.id });
 
       await tx.insert(orderItems).values(

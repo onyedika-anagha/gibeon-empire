@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { CatalogueService } from "./catalogue.service";
+import { CATEGORIES } from "./categories";
 import { Public } from "../auth/decorators/public.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -22,6 +23,13 @@ export class CatalogueController {
   @Get()
   list(@Query() query: ProductQueryDto) {
     return this.catalogue.list(query);
+  }
+
+  // Declared before ":slug" so "categories" isn't read as a product slug.
+  @Public()
+  @Get("categories")
+  categories() {
+    return CATEGORIES;
   }
 
   @Public()

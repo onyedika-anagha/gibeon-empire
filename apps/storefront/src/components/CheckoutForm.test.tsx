@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CartProvider } from "@/hooks/useCart";
@@ -33,6 +33,7 @@ vi.mock("@/lib/api", () => ({
       reference: "GE-TEST",
       authorizationUrl: "http://pay.test/GE-TEST",
     }),
+    taxRate: vi.fn().mockResolvedValue({ vatRateBps: 750 }),
     me: vi.fn(),
     login: vi.fn(),
     register: vi.fn(),
@@ -55,6 +56,15 @@ function renderForm() {
 }
 
 describe("CheckoutForm", () => {
+  // jsdom can't navigate; capture the hand-off to hosted checkout instead.
+  const assign = vi.fn();
+  beforeAll(() => {
+    Object.defineProperty(window, "location", {
+      value: { ...window.location, assign },
+      writable: true,
+    });
+  });
+
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem("gibeon.cart", JSON.stringify([cartItem]));
@@ -65,7 +75,9 @@ describe("CheckoutForm", () => {
     const user = userEvent.setup();
     renderForm();
 
-    const placeBtn = await screen.findByRole("button", { name: /place order/i });
+    // ₦220 + 7.5% VAT (₦236.50, displayed rounded) — the button charges the same total the API will price.
+    const placeBtn = await screen.findByRole("button", { name: /place order · ₦237/i });
+    expect(await screen.findByText(/VAT \(7.5%\)/)).toBeInTheDocument();
     await user.type(screen.getByLabelText(/email/i), "jane@x.com");
     await user.click(placeBtn);
 
@@ -79,6 +91,7 @@ describe("CheckoutForm", () => {
       undefined,
     );
     expect(api.initializePayment).toHaveBeenCalledWith("o1");
+    expect(assign).toHaveBeenCalledWith("http://pay.test/GE-TEST");
     expect(screen.getByText(/GE-TEST/)).toBeInTheDocument();
   });
 });

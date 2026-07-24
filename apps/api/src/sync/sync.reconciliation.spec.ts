@@ -9,12 +9,14 @@ import {
   orderItems,
   oversellReviews,
   posSales,
+  productMedia,
   products,
   variants,
   locations,
 } from "../db/schema";
 import { SyncService, type OutboxSale } from "./sync.service";
 import { AuditService } from "../common/audit/audit.service";
+import { SettingsService } from "../settings/settings.service";
 import type { DrizzleDB } from "../db/db.module";
 
 // Integration test — needs the docker Postgres running (DATABASE_URL set).
@@ -34,7 +36,7 @@ d("SyncService reconciliation (offline POS)", () => {
   beforeAll(async () => {
     client = postgres(process.env.DATABASE_URL as string, { max: 5 });
     db = drizzle(client, { schema }) as unknown as DrizzleDB;
-    service = new SyncService(db, new AuditService(db));
+    service = new SyncService(db, new AuditService(db), new SettingsService(db));
 
     const [loc] = await db.select({ id: locations.id }).from(locations).where(eq(locations.isDefault, true));
     locationId = loc.id;
@@ -73,6 +75,19 @@ d("SyncService reconciliation (offline POS)", () => {
       soldAt: new Date().toISOString(),
     };
   }
+
+  it("hands the till a cover image and the VAT rate with the snapshot", async () => {
+    // Position 1 is inserted first to prove the lowest position wins.
+    await db.insert(productMedia).values([
+      { productId, url: "https://cdn.test/second.png", position: 1 },
+      { productId, url: "https://cdn.test/cover.png", position: 0 },
+    ]);
+
+    const snapshot = await service.pull();
+    expect(snapshot.vatRateBps).toBeGreaterThan(0);
+    const row = snapshot.variants.find((v) => v.variantId === variantId);
+    expect(row?.image).toBe("https://cdn.test/cover.png");
+  });
 
   it("commits a normal offline sale and deducts stock", async () => {
     const [res] = await service.push([sale("sale-1", 2)], "cashier-1");

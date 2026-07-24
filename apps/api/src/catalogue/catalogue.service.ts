@@ -1,10 +1,11 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { and, eq, gte, ilike, inArray, lte } from "drizzle-orm";
+import { and, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { DRIZZLE, type DrizzleDB } from "../db/db.module";
 import { inventory, productMedia, products, variants } from "../db/schema";
 import { AuditService } from "../common/audit/audit.service";
 import { InventoryService } from "../inventory/inventory.service";
 import { generateSku, isUniqueViolation, shortSuffix, slugify } from "../common/slug";
+import { CATEGORY_LABELS } from "./categories";
 import type {
   CreateMediaDto,
   CreateProductDto,
@@ -13,6 +14,15 @@ import type {
   UpdateProductDto,
   UpdateVariantDto,
 } from "./dto/catalogue.dto";
+
+/**
+ * ILIKE pattern for a free-text search term. `%`, `_` and `\` are escaped so a
+ * search for "50%" is a literal, not a match-everything wildcard.
+ */
+export function searchPattern(term: string): string | undefined {
+  const t = term.trim();
+  return t ? `%${t.replace(/[\\%_]/g, "\\$&")}%` : undefined;
+}
 
 async function withUniqueRetry<T>(fn: () => Promise<T>, attempts = 5): Promise<T> {
   for (let i = 0; i < attempts; i++) {
@@ -245,16 +255,28 @@ export class CatalogueService {
       if (candidateProductIds.length === 0) return [];
     }
 
+    const pattern = query.q ? searchPattern(query.q) : undefined;
+
     const pConds = [
       query.category ? eq(products.category, query.category) : undefined,
-      query.q ? ilike(products.name, `%${query.q}%`) : undefined,
+      pattern
+        ? or(
+            ilike(products.name, pattern),
+            ilike(products.brand, pattern),
+            ilike(products.description, pattern),
+          )
+        : undefined,
       candidateProductIds ? inArray(products.id, candidateProductIds) : undefined,
     ].filter(Boolean);
 
     const rows = await this.db
       .select()
       .from(products)
-      .where(pConds.length ? and(...pConds) : undefined);
+      .where(pConds.length ? and(...pConds) : undefined)
+      // Searching ranks name hits above brand/description-only hits; otherwise A–Z.
+      .orderBy(pattern ? sql`(${products.name} ilike ${pattern}) desc, ${products.name}` : products.name)
+      // ponytail: hard cap instead of pagination — add cursor paging past ~500 products.
+      .limit(query.limit ?? 500);
 
     return this.hydrate(rows);
   }
@@ -291,6 +313,7 @@ export class CatalogueService {
       slug: p.slug,
       description: p.description,
       category: p.category,
+      categoryLabel: CATEGORY_LABELS.get(p.category) ?? p.category, // legacy values render as-is
       brand: p.brand,
       media: media
         .filter((m) => m.productId === p.id)

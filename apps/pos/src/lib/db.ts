@@ -7,8 +7,10 @@ export interface SnapshotVariant {
   size: string;
   color: string;
   price: number;
+  productId: string;
   productName: string;
   category: string;
+  image: string | null; // product cover, cached with the snapshot for offline use
   quantity: number | null;
 }
 
@@ -24,6 +26,8 @@ export interface OutboxSale {
   items: OutboxItem[];
   method: "CARD" | "CASH" | "TRANSFER" | "SPLIT";
   discountTotal: number;
+  taxTotal: number;
+  taxRate: number; // basis points, snapshotted so the receipt stays truthful
   total: number;
   soldAt: string;
   synced: 0 | 1;

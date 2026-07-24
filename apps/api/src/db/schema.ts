@@ -179,6 +179,8 @@ export const orders = pgTable(
     contactEmail: text("contact_email"), // guest checkout has no account (PRD Req. 5)
     subtotal: integer("subtotal").notNull().default(0),
     discountTotal: integer("discount_total").notNull().default(0),
+    taxTotal: integer("tax_total").notNull().default(0), // Nigerian VAT, added at checkout
+    taxRate: integer("tax_rate_bps").notNull().default(0), // basis points, snapshotted per order
     total: integer("total").notNull().default(0),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),

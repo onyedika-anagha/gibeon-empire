@@ -2,6 +2,7 @@
 
 import type { OutboxSale } from "@/lib/db";
 import { formatMoney } from "@/lib/format";
+import { formatRate } from "@/lib/vat";
 import Monogram from "./Monogram";
 
 export default function Receipt({ sale, onClose }: { sale: OutboxSale; onClose: () => void }) {
@@ -54,6 +55,9 @@ export default function Receipt({ sale, onClose }: { sale: OutboxSale; onClose: 
             <Row label="Subtotal" value={formatMoney(subtotal)} />
             {sale.discountTotal > 0 && (
               <Row label="Discount" value={`−${formatMoney(sale.discountTotal)}`} />
+            )}
+            {sale.taxTotal > 0 && (
+              <Row label={`VAT (${formatRate(sale.taxRate)})`} value={formatMoney(sale.taxTotal)} />
             )}
             <div className="flex justify-between border-t border-[#eee7db] pt-2 text-base font-semibold text-[#1a1714]">
               <span>Total</span>

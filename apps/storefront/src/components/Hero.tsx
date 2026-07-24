@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useScroll, useTransform } from "motion/react";
+import { useRef } from "react";
 import { EASE } from "./motion";
 import { IconArrowUpRight } from "./icons";
 
@@ -10,16 +11,44 @@ const rise = {
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
-    transition: { duration: 1, ease: EASE, delay: 0.25 + i * 0.12 },
+    transition: { duration: 1, ease: EASE, delay: 0.2 + i * 0.1 },
   }),
 };
-
 export default function Hero() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end start"],
+  });
+
+  const videoY = useTransform(scrollYProgress, [0, 1], [0, 80]);
+  const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.05]);
+  const videoOpacity = useTransform(scrollYProgress, [0, 0.7, 1], [1, 0.95, 0.45]);
+  const contentY = useTransform(scrollYProgress, [0, 1], [0, 40]);
+
   return (
-    <section className="relative overflow-hidden px-4 pt-36 pb-16 md:pt-44 md:pb-24">
+    <section className="relative overflow-hidden px-4 pt-36 pb-16 md:pt-44 md:pb-24 h-screen flex flex-col justify-between">
       {/* ambient light */}
-      <div className="pointer-events-none absolute -top-32 -left-24 h-[38rem] w-[38rem] animate-drift rounded-full bg-blush/50 blur-[120px]" />
-      <div className="pointer-events-none absolute top-24 right-0 h-[30rem] w-[30rem] animate-drift rounded-full bg-gold-soft/25 blur-[130px]" />
+      <div className="pointer-events-none absolute -top-32 -left-24 h-152 w-152 animate-drift rounded-full bg-blush/50 blur-[120px]" />
+      <div className="pointer-events-none absolute top-24 right-0 h-120 w-120 animate-drift rounded-full bg-gold-soft/25 blur-[130px]" />
+      <motion.div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,202,221,0.45),transparent_36%),radial-gradient(circle_at_82%_16%,rgba(255,214,130,0.24),transparent_34%)]" />
+
+      <motion.div
+        style={{ y: videoY, scale: videoScale, opacity: videoOpacity }}
+        className="absolute inset-0"
+      >
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="h-full w-full object-cover"
+          src="https://framerusercontent.com/assets/NjTmL2YIzs2LWaHT2O5VsxgAQ.mp4"
+          poster="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1400&q=80"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(244,236,228,0.95)_0%,rgba(244,236,228,0.72)_32%,rgba(244,236,228,0.16)_72%,rgba(244,236,228,0.08)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,14,12,0.16)_0%,rgba(17,14,12,0.3)_100%)]" />
+      </motion.div>
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-[1.05fr_0.95fr]">
         {/* copy */}
@@ -53,8 +82,8 @@ export default function Hero() {
             animate="show"
             className="mt-6 max-w-md text-[15px] leading-relaxed text-stone"
           >
-            Modern essentials in refined tones and timeless cuts — the quiet
-            confidence of pieces designed to feel as good as they look.
+            Modern essentials in refined tones and timeless cuts — the quiet confidence of pieces
+            designed to feel as good as they look.
           </motion.p>
 
           <motion.div
@@ -108,12 +137,14 @@ export default function Hero() {
             tone={["#e2cfd0", "#b58f92"]}
             delay={0.4}
             label="Aria Bias Gown"
+            image="https://res.cloudinary.com/diiwcwakk/image/upload/v1784829814/5_mztjfk.png"
           />
           <FabricCard
             className="absolute bottom-0 left-0 h-[62%] w-[54%] -rotate-[4deg]"
             tone={["#e9ddc9", "#c8b088"]}
             delay={0.58}
             label="Verona Knit"
+            image="https://res.cloudinary.com/diiwcwakk/image/upload/v1784829826/11_o8z8dj.png"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -125,6 +156,25 @@ export default function Hero() {
           </motion.div>
         </div>
       </div>
+      <div className="relative mx-auto max-w-6xl w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.85, ease: EASE, delay: 0.55 }}
+          className="mt-12 flex flex-wrap items-center gap-3 border-t border-ink/10 pt-6 text-[11px] uppercase tracking-[0.2em] text-stone"
+        >
+          {[
+            ["10M+", "Members worldwide"],
+            ["24 yrs", "In fine tailoring"],
+            ["5", "Flagship ateliers"],
+          ].map(([value, label]) => (
+            <div key={label} className="rounded-full bg-white/55 px-3 py-2 backdrop-blur">
+              <span className="mr-2 font-display text-base text-ink">{value}</span>
+              {label}
+            </div>
+          ))}
+        </motion.div>
+      </div>
     </section>
   );
 }
@@ -134,11 +184,13 @@ function FabricCard({
   tone,
   delay,
   label,
+  image,
 }: {
   className: string;
   tone: [string, string];
   delay: number;
   label: string;
+  image?: string;
 }) {
   return (
     <motion.div
@@ -149,8 +201,12 @@ function FabricCard({
       style={{ background: "rgba(255,255,255,0.35)" }}
     >
       <div
-        className="relative h-full w-full overflow-hidden rounded-[calc(2rem-0.375rem)]"
-        style={{ backgroundImage: `linear-gradient(150deg, ${tone[0]}, ${tone[1]})` }}
+        className={`relative h-full w-full overflow-hidden rounded-[calc(2rem-0.375rem)] ${image ? "bg-cover bg-center" : ""}`}
+        style={{
+          backgroundImage: image
+            ? `url(${image})`
+            : `linear-gradient(150deg, ${tone[0]}, ${tone[1]})`,
+        }}
       >
         <div className="absolute inset-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.35)]" />
         <span className="absolute bottom-4 left-4 rounded-full bg-ink/25 px-3 py-1 text-[11px] text-ivory backdrop-blur-sm">

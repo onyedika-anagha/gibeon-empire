@@ -7,6 +7,12 @@ export const NOTIFICATIONS_QUEUE = "notifications";
 export interface OrderConfirmationJob {
   orderReference: string;
   email: string;
+  /** Full receipt lines, snapshotted so the email never re-reads a changed order. */
+  items: Array<{ nameSnapshot: string; quantity: number; unitPrice: number }>;
+  subtotal: number;
+  discountTotal: number;
+  taxTotal: number;
+  taxRate: number; // basis points
   total: number;
 }
 

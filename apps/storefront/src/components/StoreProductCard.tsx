@@ -29,6 +29,7 @@ export default function StoreProductCard({ p }: { p: ApiProduct }) {
       size: firstAvailable.size,
       color: firstAvailable.color,
       price: firstAvailable.price,
+      image: image?.url,
     });
     setOpen(true);
   }
@@ -82,7 +83,7 @@ export default function StoreProductCard({ p }: { p: ApiProduct }) {
           <h3 className="text-[15px] leading-tight text-ink transition-colors group-hover:text-gold">
             <Link href={`/products/${p.slug}`}>{p.name}</Link>
           </h3>
-          <p className="mt-0.5 text-[12px] text-taupe">{p.category}</p>
+          <p className="mt-0.5 text-[12px] text-taupe">{p.categoryLabel}</p>
         </div>
         <div className="flex shrink-0 items-baseline gap-1.5">
           {priced?.compareAtPrice ? (

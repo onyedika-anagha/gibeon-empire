@@ -32,6 +32,7 @@ export default function ProductDetail({ product }: { product: ApiProduct }) {
       size: selected.size,
       color: selected.color,
       price: selected.price,
+      image: images[0]?.url,
     });
     setOpen(true);
   }
@@ -81,7 +82,7 @@ export default function ProductDetail({ product }: { product: ApiProduct }) {
         className="flex flex-col justify-center"
       >
         <span className="text-[10px] uppercase tracking-[0.24em] text-taupe">
-          {product.brand} · {product.category}
+          {product.brand} · {product.categoryLabel}
         </span>
         <h1 className="mt-3 font-display text-4xl leading-[1.05] tracking-[-0.02em] text-ink md:text-5xl">
           {product.name}

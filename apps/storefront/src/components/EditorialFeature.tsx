@@ -26,14 +26,16 @@ export default function EditorialFeature() {
       >
         <div>
           <Reveal>
-            <span className="text-[10px] uppercase tracking-[0.24em] text-gold-soft">The House</span>
+            <span className="text-[10px] uppercase tracking-[0.24em] text-gold-soft">
+              The House
+            </span>
             <h2 className="mt-4 font-display text-4xl leading-[1.03] tracking-[-0.02em] md:text-[3.25rem]">
               A softer, more deliberate take on modern luxury.
             </h2>
             <p className="mt-6 max-w-md text-[15px] leading-relaxed text-ivory/70">
-              Gibeon Empire is built for the woman who dresses for herself —
-              refined palettes, natural textures, and pieces you reach for long
-              after the season turns. Quiet luxury, made to last.
+              Gibeon Empire is built for the woman who dresses for herself — refined palettes,
+              natural textures, and pieces you reach for long after the season turns. Quiet luxury,
+              made to last.
             </p>
             <a
               href="#"
@@ -50,7 +52,10 @@ export default function EditorialFeature() {
             {STATS.map(([n, l], i) => (
               <Reveal key={l} delay={i * 0.08}>
                 <div className="font-display text-3xl text-ivory">{n}</div>
-                <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-ivory/50">{l}</div>
+                <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-ivory/50">
+                  {l}
+                </div>
+                -
               </Reveal>
             ))}
           </div>
@@ -58,12 +63,21 @@ export default function EditorialFeature() {
 
         <motion.div style={{ y }} className="relative h-[24rem] md:h-[30rem]">
           <div
-            className="absolute right-0 top-0 h-full w-[78%] overflow-hidden rounded-[2rem] shadow-[0_40px_80px_-40px_rgba(0,0,0,0.6)]"
-            style={{ backgroundImage: "linear-gradient(160deg,#d8c6c0,#9a7d76 55%,#4c3f3a)" }}
-          />
+            className="absolute right-0 top-0 h-full w-[78%] overflow-hidden rounded-[2rem] shadow-[0_40px_80px_-40px_rgba(0,0,0,0.6)] bg-[#d8c6c0] bg-cover bg-center bg-blend-multiply"
+            style={{
+              backgroundImage:
+                // "linear-gradient(160deg,#d8c6c0,#9a7d76 55%,#4c3f3a)"
+                "url(https://res.cloudinary.com/diiwcwakk/image/upload/v1784831988/7_jm4mlw.webp)",
+            }}
+          >
+            <div className="absolute inset-0 bg-linear-180 from-transparent to-[#4c3f3ac7]" />
+          </div>
           <div
-            className="absolute bottom-6 left-0 h-[46%] w-[46%] overflow-hidden rounded-[1.6rem] ring-1 ring-ivory/20 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.7)]"
-            style={{ backgroundImage: "linear-gradient(150deg,#e9ddc9,#c8b088)" }}
+            className="absolute bottom-6 left-0 h-[46%] w-[46%] overflow-hidden rounded-[1.6rem] ring-1 ring-ivory/20 shadow-[0_30px_60px_-30px_rgba(0,0,0,0.7)] bg-[#e9ddc9] bg-cover bg-center bg-blend-multiply"
+            style={{
+              backgroundImage:
+                "url(https://res.cloudinary.com/diiwcwakk/image/upload/v1784830292/bags_oij0n7.webp)",
+            }}
           />
         </motion.div>
       </div>

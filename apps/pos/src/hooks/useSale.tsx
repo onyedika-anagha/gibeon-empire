@@ -5,6 +5,7 @@ import { db, type OutboxSale, type SnapshotVariant } from "@/lib/db";
 import { recordSale } from "@/lib/sync";
 import { usePos } from "@/hooks/usePos";
 import { useBarcode } from "@/hooks/useBarcode";
+import { getVatRateBps, vatOn } from "@/lib/vat";
 
 export interface CartLine {
   variantId: string;
@@ -81,7 +82,9 @@ export function useSale() {
   }, [catalogue, query]);
 
   const subtotal = cart.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
-  const total = Math.max(0, subtotal - discount);
+  const taxRate = getVatRateBps();
+  const taxTotal = vatOn(Math.max(0, subtotal - discount), taxRate);
+  const total = Math.max(0, subtotal - discount) + taxTotal;
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
   const setQty = useCallback((variantId: string, qty: number) => {
@@ -137,6 +140,8 @@ export function useSale() {
     method,
     setMethod,
     subtotal,
+    taxTotal,
+    taxRate,
     total,
     complete,
     confirming,

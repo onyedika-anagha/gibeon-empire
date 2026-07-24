@@ -24,7 +24,9 @@ describe("POS outbox sync", () => {
   it("writes the sale to the outbox first, with a client-generated id (Req. 34)", async () => {
     const sale = await recordSale([item], "CASH", 0);
     expect(sale.clientId).toEqual(expect.any(String));
-    expect(sale.total).toBe(10000);
+    // ₦100 + 7.5% VAT, charged at the till exactly as the server will re-price it.
+    expect(sale.taxTotal).toBe(750);
+    expect(sale.total).toBe(10750);
 
     const rows = await db.outbox.toArray();
     expect(rows).toHaveLength(1);
@@ -58,8 +60,10 @@ describe("POS outbox sync", () => {
       size: "S",
       color: "Ink",
       price: 5000,
+      productId: "p1",
       productName: "Silk Slip",
-      category: "Dresses",
+      category: "party-wear",
+      image: null,
       quantity: 5,
     });
     await recordSale([item], "CASH", 0);

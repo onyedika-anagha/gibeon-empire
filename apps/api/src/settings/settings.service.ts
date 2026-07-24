@@ -29,4 +29,21 @@ export class SettingsService {
   async setActiveProvider(provider: PaymentProvider): Promise<void> {
     await this.set("activePaymentProvider", provider);
   }
+
+  // Nigerian VAT, held in basis points so the arithmetic stays in integers
+  // (750 bps = 7.5%). Admin-editable; each order snapshots the rate it used.
+  async getVatRateBps(): Promise<number> {
+    return (await this.get<number>("vatRateBps")) ?? DEFAULT_VAT_BPS;
+  }
+
+  async setVatRateBps(bps: number): Promise<void> {
+    await this.set("vatRateBps", bps);
+  }
+}
+
+export const DEFAULT_VAT_BPS = 750;
+
+/** VAT added on top of the taxable amount, rounded to the nearest kobo. */
+export function vatOn(taxableAmount: number, rateBps: number): number {
+  return Math.round((taxableAmount * rateBps) / 10_000);
 }

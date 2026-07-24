@@ -6,12 +6,15 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
 import { api, type Order } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
+import { useVatRate, vatOn } from "@/hooks/useVatRate";
+import OrderTotals from "./OrderTotals";
 
 type Status = "idle" | "placing" | "done" | "error";
 
 export default function CheckoutForm() {
   const { items, subtotal, clear } = useCart();
   const { token, email: authEmail, register } = useAuth();
+  const tax = vatOn(subtotal, useVatRate()); // priced again server-side on create
 
   const [email, setEmail] = useState(authEmail ?? "");
   const [firstName, setFirst] = useState("");
@@ -48,6 +51,8 @@ export default function CheckoutForm() {
       setPayUrl(payment.authorizationUrl);
       setStatus("done");
       clear();
+      // Straight to hosted checkout; the fallback link below covers a blocked redirect.
+      window.location.assign(payment.authorizationUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setStatus("error");
@@ -136,7 +141,7 @@ export default function CheckoutForm() {
           disabled={status === "placing"}
           className="mt-8 w-full rounded-full bg-ink py-3.5 text-sm text-ivory transition-all duration-500 active:scale-[0.98] disabled:opacity-60"
         >
-          {status === "placing" ? "Placing order…" : `Place order · ${formatMoney(subtotal)}`}
+          {status === "placing" ? "Placing order…" : `Place order · ${formatMoney(subtotal + tax)}`}
         </button>
       </form>
 
@@ -152,9 +157,8 @@ export default function CheckoutForm() {
             </li>
           ))}
         </ul>
-        <div className="mt-5 flex justify-between border-t border-ink/8 pt-4">
-          <span className="text-sm text-stone">Subtotal</span>
-          <span className="font-display text-xl text-ink">{formatMoney(subtotal)}</span>
+        <div className="mt-5 border-t border-ink/8 pt-4">
+          <OrderTotals subtotal={subtotal} />
         </div>
       </aside>
     </div>

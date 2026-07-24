@@ -34,6 +34,13 @@ export class PaymentsController {
     return this.payments.handleWebhook(provider, raw, signature);
   }
 
+  // Hosted checkout redirects the shopper here-ish; we re-verify server-side before trusting it.
+  @Public()
+  @Get(":reference/status")
+  status(@Param("reference") reference: string) {
+    return this.payments.statusByReference(reference);
+  }
+
   @Roles("ADMIN")
   @HttpCode(200)
   @Post(":reference/simulate-success")

@@ -25,6 +25,8 @@ export default function SaleScreen() {
         count={s.count}
         subtotal={s.subtotal}
         discount={s.discount}
+        taxTotal={s.taxTotal}
+        taxRate={s.taxRate}
         total={s.total}
         method={s.method}
         onQty={s.setQty}

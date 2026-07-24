@@ -10,6 +10,7 @@ export interface CartItem {
   color: string;
   price: number; // minor units
   quantity: number;
+  image?: string; // cover photo; absent for products with no media yet
 }
 
 interface CartCtx {

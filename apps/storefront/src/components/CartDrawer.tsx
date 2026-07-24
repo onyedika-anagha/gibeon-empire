@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { useCart } from "@/hooks/useCart";
 import { formatMoney } from "@/lib/format";
+import OrderTotals from "./OrderTotals";
 import { EASE } from "./motion";
 
 export default function CartDrawer() {
@@ -42,7 +43,13 @@ export default function CartDrawer() {
                 <ul className="space-y-5">
                   {items.map((i) => (
                     <li key={i.variantId} className="flex gap-4">
-                      <div className="h-20 w-16 shrink-0 rounded-lg bg-gradient-to-br from-sand to-blush" />
+                      {/* Gradient stands in for products without photography. */}
+                      <div className="h-20 w-16 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-sand to-blush">
+                        {i.image && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={i.image} alt={i.name} className="h-full w-full object-cover" />
+                        )}
+                      </div>
                       <div className="flex-1">
                         <div className="flex justify-between gap-2">
                           <p className="text-[14px] leading-tight text-ink">{i.name}</p>
@@ -73,9 +80,8 @@ export default function CartDrawer() {
             </div>
 
             <footer className="border-t border-ink/8 px-6 py-5">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm text-stone">Subtotal</span>
-                <span className="font-display text-xl text-ink">{formatMoney(subtotal)}</span>
+              <div className="mb-4">
+                <OrderTotals subtotal={subtotal} />
               </div>
               <Link
                 href="/checkout"

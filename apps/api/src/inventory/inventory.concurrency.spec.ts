@@ -61,4 +61,17 @@ d("InventoryService concurrency (row-level locking)", () => {
       .where(eq(inventory.variantId, variantId));
     expect(row.quantity).toBe(0); // never oversold below zero
   });
+
+  it("names the product and variant on the low-stock list", async () => {
+    // Runs after the deduction above, so this variant sits at 0 and is listed.
+    const rows = await service.listLowStock();
+    const row = rows.find((r) => r.variantId === variantId);
+    expect(row).toMatchObject({
+      productName: "Concurrency Test",
+      size: "M",
+      color: "black",
+      quantity: 0,
+    });
+    expect(row?.sku).toMatch(/^CT-/);
+  });
 });

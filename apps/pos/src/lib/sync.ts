@@ -1,9 +1,11 @@
 import { api } from "./api";
 import { db, type OutboxItem, type OutboxSale } from "./db";
+import { getVatRateBps, setVatRateBps, vatOn } from "./vat";
 
 /** Pull a fresh catalogue/stock snapshot into IndexedDB (PRD Req. 33). */
 export async function pullSnapshot(): Promise<number> {
-  const { variants } = await api.pull();
+  const { variants, vatRateBps } = await api.pull();
+  if (vatRateBps) setVatRateBps(vatRateBps); // keep the till taxing correctly offline
   await db.transaction("rw", db.catalogue, async () => {
     await db.catalogue.clear();
     await db.catalogue.bulkPut(variants);
@@ -23,12 +25,17 @@ export async function recordSale(
   discountTotal: number,
 ): Promise<OutboxSale> {
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  const taxRate = getVatRateBps();
+  const taxable = Math.max(0, subtotal - discountTotal);
+  const taxTotal = vatOn(taxable, taxRate);
   const sale: OutboxSale = {
     clientId: crypto.randomUUID(),
     items,
     method,
     discountTotal,
-    total: Math.max(0, subtotal - discountTotal),
+    taxTotal,
+    taxRate,
+    total: taxable + taxTotal,
     soldAt: new Date().toISOString(),
     synced: 0,
   };

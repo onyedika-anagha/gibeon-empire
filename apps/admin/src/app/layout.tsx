@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AdminAuthProvider } from "@/hooks/useAdminAuth";
 import AdminShell from "@/components/AdminShell";
+import { Toaster } from "@/components/ui/sonner";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AdminAuthProvider>
           <AdminShell>{children}</AdminShell>
         </AdminAuthProvider>
+        <Toaster position="bottom-right" />
       </body>
     </html>
   );

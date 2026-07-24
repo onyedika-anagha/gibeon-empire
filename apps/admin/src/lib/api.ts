@@ -32,10 +32,40 @@ export interface AdminProduct {
   name: string;
   slug: string;
   description: string;
-  category: string;
+  category: string; // slug
+  categoryLabel: string;
   brand: string;
   media: AdminMedia[];
   variants: AdminVariant[];
+}
+export interface Category {
+  slug: string;
+  label: string;
+}
+/** Slug is server-generated and immutable, so it is never part of a patch. */
+export interface ProductPatch {
+  name?: string;
+  description?: string;
+  category?: string;
+  brand?: string;
+}
+export interface VariantInput {
+  size: string;
+  color: string;
+  price: number; // minor units
+  compareAtPrice?: number;
+  barcode?: string;
+  initialQuantity?: number;
+}
+export interface LowStockRow {
+  variantId: string;
+  quantity: number;
+  lowStockThreshold: number;
+  sku: string;
+  size: string;
+  color: string;
+  productName: string;
+  productSlug: string;
 }
 export interface AuditLog {
   id: string;
@@ -131,8 +161,13 @@ export const api = {
   me: () => req<{ id: string; email: string; type: string; role?: Role }>(`/auth/me`),
 
   products: () => req<AdminProduct[]>(`/products`),
+  categories: () => req<Category[]>(`/products/categories`),
   createProduct: (body: unknown) => req<AdminProduct>(`/products`, { method: "POST", body: JSON.stringify(body) }),
-  updateVariant: (variantId: string, body: unknown) =>
+  updateProduct: (id: string, body: ProductPatch) =>
+    req<AdminProduct>(`/products/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  createVariant: (productId: string, body: VariantInput) =>
+    req<string>(`/products/${productId}/variants`, { method: "POST", body: JSON.stringify(body) }),
+  updateVariant: (variantId: string, body: Partial<VariantInput>) =>
     req(`/products/variants/${variantId}`, { method: "PATCH", body: JSON.stringify(body) }),
   addProductMedia: (productId: string, body: { url: string; alt?: string }) =>
     req<AdminMedia>(`/products/${productId}/media`, { method: "POST", body: JSON.stringify(body) }),
@@ -140,7 +175,7 @@ export const api = {
     req<{ ok: boolean }>(`/products/media/${mediaId}`, { method: "DELETE" }),
   signUpload: () => req<UploadSignature>(`/media/sign`, { method: "POST" }),
 
-  lowStock: () => req<Array<{ variantId: string; quantity: number; lowStockThreshold: number }>>(`/inventory/low-stock`),
+  lowStock: () => req<LowStockRow[]>(`/inventory/low-stock`),
   adjustStock: (body: { variantId: string; mode: "set" | "delta"; value: number; reason: string }) =>
     req(`/inventory/adjust`, { method: "POST", body: JSON.stringify(body) }),
 
@@ -155,6 +190,10 @@ export const api = {
   updateStaffRole: (id: string, role: Role) =>
     req<StaffMember>(`/staff/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
   resetStaffTotp: (id: string) => req<{ ok: boolean }>(`/staff/${id}/totp/reset`, { method: "POST" }),
+
+  getTaxRate: () => req<{ vatRateBps: number }>(`/settings/tax`),
+  setTaxRate: (vatRateBps: number) =>
+    req<{ vatRateBps: number }>(`/settings/tax`, { method: "PATCH", body: JSON.stringify({ vatRateBps }) }),
 
   getProvider: () => req<{ provider: "PAYSTACK" | "FLUTTERWAVE" }>(`/payments/provider`),
   setProvider: (provider: "PAYSTACK" | "FLUTTERWAVE") =>

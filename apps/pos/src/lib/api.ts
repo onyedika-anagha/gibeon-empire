@@ -49,7 +49,7 @@ export const api = {
     req<{ accessToken: string }>(`/auth/staff/totp/verify`, { method: "POST", body: JSON.stringify({ challenge, code }) }),
   me: () => req<{ id: string; email: string; type: string; role?: string }>(`/auth/me`),
 
-  pull: () => req<{ syncedAt: string; variants: SnapshotVariant[] }>(`/sync/pull`, { method: "POST" }),
+  pull: () => req<{ syncedAt: string; vatRateBps: number; variants: SnapshotVariant[] }>(`/sync/pull`, { method: "POST" }),
   push: (sales: OutboxSale[]) =>
     req<ReconciliationResult[]>(`/sync/push`, {
       method: "POST",
