@@ -4,9 +4,11 @@ import { PassportModule } from "@nestjs/passport";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./jwt.strategy";
+import { OrdersModule } from "../orders/orders.module";
 
 @Module({
   imports: [
+    OrdersModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET ?? "change-me-in-production",

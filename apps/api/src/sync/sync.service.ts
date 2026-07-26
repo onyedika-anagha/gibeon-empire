@@ -16,6 +16,7 @@ import {
   type PaymentMethod,
 } from "../db/schema";
 import { AuditService } from "../common/audit/audit.service";
+import { CouponsService } from "../coupons/coupons.service";
 import { generateReference } from "../common/reference";
 import { SettingsService, vatOn } from "../settings/settings.service";
 
@@ -23,7 +24,8 @@ export interface OutboxSale {
   clientId: string; // client-generated, guarantees idempotency
   items: Array<{ variantId: string; quantity: number; unitPrice: number }>;
   method: PaymentMethod;
-  discountTotal: number;
+  discountTotal: number; // manual + coupon, already folded in by the till
+  couponCode?: string; // validated online at sale time; redeemed here on sync
   soldAt: string;
 }
 
@@ -38,6 +40,7 @@ export class SyncService {
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly audit: AuditService,
     private readonly settings: SettingsService,
+    private readonly coupons: CouponsService,
   ) {}
 
   private locationId?: string;
@@ -106,7 +109,7 @@ export class SyncService {
     locationId: string,
     taxRate: number,
   ): Promise<ReconciliationResult> {
-    return this.db.transaction(async (tx) => {
+    const { result, orderId } = await this.db.transaction(async (tx) => {
       // 1. Claim the client id — a duplicate replay conflicts and is ignored.
       const claim = await tx
         .insert(posSales)
@@ -114,7 +117,7 @@ export class SyncService {
         .onConflictDoNothing()
         .returning({ id: posSales.id });
       if (claim.length === 0) {
-        return { clientId: sale.clientId, status: "duplicate_ignored" };
+        return { result: { clientId: sale.clientId, status: "duplicate_ignored" as const }, orderId: null };
       }
       const posSaleId = claim[0].id;
 
@@ -208,10 +211,57 @@ export class SyncService {
       );
 
       return {
-        clientId: sale.clientId,
-        status: oversold ? "flagged_oversell" : "committed",
-        orderReference: reference,
+        result: {
+          clientId: sale.clientId,
+          status: oversold ? ("flagged_oversell" as const) : ("committed" as const),
+          orderReference: reference,
+        },
+        orderId: order.id,
       };
     });
+
+    // Coupon redemption is recorded AFTER the sale commits and best-effort: a code
+    // that expired or hit its limit between the offline sale and this sync must
+    // never roll back a completed sale. Duplicate replays (orderId null) skip it,
+    // so a coupon is never redeemed twice.
+    if (sale.couponCode && orderId) {
+      try {
+        await this.redeemCoupon(sale.couponCode, sale.items, orderId);
+      } catch {
+        await this.audit.record({
+          actor,
+          action: "pos.coupon_redeem_failed",
+          entity: "order",
+          entityId: orderId,
+          data: { code: sale.couponCode },
+        });
+      }
+    }
+    return result;
+  }
+
+  // Recompute the coupon's discount from the sale's items and record the redemption.
+  private async redeemCoupon(
+    code: string,
+    items: OutboxSale["items"],
+    orderId: string,
+  ): Promise<void> {
+    const ids = items.map((i) => i.variantId);
+    const rows = await this.db
+      .select({ id: variants.id, productId: products.id, category: products.category })
+      .from(variants)
+      .innerJoin(products, eq(products.id, variants.productId))
+      .where(inArray(variants.id, ids));
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const lines = items.flatMap((i) => {
+      const v = byId.get(i.variantId);
+      return v ? [{ productId: v.productId, category: v.category, unitPrice: i.unitPrice, quantity: i.quantity }] : [];
+    });
+    const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
+
+    const priced = await this.coupons.priceForCart(code, lines, subtotal);
+    await this.db.transaction((tx) =>
+      this.coupons.redeem(tx as unknown as DrizzleDB, priced.couponId, orderId, undefined, priced.discount),
+    );
   }
 }

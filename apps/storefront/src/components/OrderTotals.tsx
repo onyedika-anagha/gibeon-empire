@@ -3,18 +3,20 @@
 import { formatMoney } from "@/lib/format";
 import { formatRate, useVatRate, vatOn } from "@/hooks/useVatRate";
 
-/** Subtotal → VAT → total, exactly as the API will price the order. */
-export default function OrderTotals({ subtotal }: { subtotal: number }) {
+/** Subtotal → discount → VAT → total, exactly as the API will price the order. */
+export default function OrderTotals({ subtotal, discount = 0 }: { subtotal: number; discount?: number }) {
   const rate = useVatRate();
-  const tax = vatOn(subtotal, rate);
+  const taxable = Math.max(0, subtotal - discount); // VAT is charged after discount
+  const tax = vatOn(taxable, rate);
 
   return (
     <div className="space-y-2">
       <Row label="Subtotal" value={formatMoney(subtotal)} />
+      {discount > 0 && <Row label="Discount" value={`−${formatMoney(discount)}`} />}
       {rate > 0 && <Row label={`VAT (${formatRate(rate)})`} value={formatMoney(tax)} />}
       <div className="flex items-center justify-between border-t border-ink/8 pt-3">
         <span className="text-sm text-ink">Total</span>
-        <span className="font-display text-xl text-ink">{formatMoney(subtotal + tax)}</span>
+        <span className="font-display text-xl text-ink">{formatMoney(taxable + tax)}</span>
       </div>
     </div>
   );

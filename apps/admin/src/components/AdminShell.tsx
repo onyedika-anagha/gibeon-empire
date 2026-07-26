@@ -14,6 +14,7 @@ const NAV: [string, string][] = [
   ["Products", "/products"],
   ["Orders", "/orders"],
   ["Inventory", "/stock"],
+  ["Coupons", "/coupons"],
   ["Reviews", "/reviews"],
   ["Staff", "/staff"],
   ["Settings", "/settings"],

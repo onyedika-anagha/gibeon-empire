@@ -17,6 +17,7 @@ import {
 import { SyncService, type OutboxSale } from "./sync.service";
 import { AuditService } from "../common/audit/audit.service";
 import { SettingsService } from "../settings/settings.service";
+import { CouponsService } from "../coupons/coupons.service";
 import type { DrizzleDB } from "../db/db.module";
 
 // Integration test — needs the docker Postgres running (DATABASE_URL set).
@@ -36,7 +37,7 @@ d("SyncService reconciliation (offline POS)", () => {
   beforeAll(async () => {
     client = postgres(process.env.DATABASE_URL as string, { max: 5 });
     db = drizzle(client, { schema }) as unknown as DrizzleDB;
-    service = new SyncService(db, new AuditService(db), new SettingsService(db));
+    service = new SyncService(db, new AuditService(db), new SettingsService(db), new CouponsService(db));
 
     const [loc] = await db.select({ id: locations.id }).from(locations).where(eq(locations.isDefault, true));
     locationId = loc.id;

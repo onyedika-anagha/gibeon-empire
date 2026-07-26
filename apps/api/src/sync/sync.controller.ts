@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, Post } from "@nestjs/common";
 import { Type } from "class-transformer";
-import { ArrayMinSize, IsArray, IsIn, IsInt, IsISO8601, IsString, Min, ValidateNested } from "class-validator";
+import { ArrayMinSize, IsArray, IsIn, IsInt, IsISO8601, IsOptional, IsString, Min, ValidateNested } from "class-validator";
 import { SyncService, type OutboxSale } from "./sync.service";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
@@ -18,6 +18,7 @@ class OutboxSaleDto {
   items!: OutboxItemDto[];
   @IsIn(["CARD", "CASH", "TRANSFER", "SPLIT"]) method!: PaymentMethod;
   @IsInt() @Min(0) discountTotal!: number;
+  @IsOptional() @IsString() couponCode?: string;
   @IsISO8601() soldAt!: string;
 }
 class PushDto {

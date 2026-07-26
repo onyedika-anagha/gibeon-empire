@@ -25,7 +25,8 @@ export interface OutboxSale {
   clientId: string; // client-generated — the idempotency key (PRD Req. 34)
   items: OutboxItem[];
   method: "CARD" | "CASH" | "TRANSFER" | "SPLIT";
-  discountTotal: number;
+  discountTotal: number; // manual + coupon, already folded in
+  couponCode?: string; // validated online at sale time; server records the redemption on sync
   taxTotal: number;
   taxRate: number; // basis points, snapshotted so the receipt stays truthful
   total: number;

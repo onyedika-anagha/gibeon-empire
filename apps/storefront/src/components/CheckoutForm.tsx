@@ -8,13 +8,17 @@ import { api, type Order } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { useVatRate, vatOn } from "@/hooks/useVatRate";
 import OrderTotals from "./OrderTotals";
+import CouponField, { type AppliedCoupon } from "./CouponField";
 
 type Status = "idle" | "placing" | "done" | "error";
 
 export default function CheckoutForm() {
   const { items, subtotal, clear } = useCart();
   const { token, email: authEmail, register } = useAuth();
-  const tax = vatOn(subtotal, useVatRate()); // priced again server-side on create
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
+  // VAT is charged on the discounted amount; priced again server-side on create.
+  const taxable = Math.max(0, subtotal - (coupon?.discount ?? 0));
+  const tax = vatOn(taxable, useVatRate());
 
   const [email, setEmail] = useState(authEmail ?? "");
   const [firstName, setFirst] = useState("");
@@ -42,6 +46,7 @@ export default function CheckoutForm() {
           channel: "ONLINE",
           contactEmail: email,
           items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+          couponCode: coupon?.code,
         },
         activeToken,
       );
@@ -141,7 +146,7 @@ export default function CheckoutForm() {
           disabled={status === "placing"}
           className="mt-8 w-full rounded-full bg-ink py-3.5 text-sm text-ivory transition-all duration-500 active:scale-[0.98] disabled:opacity-60"
         >
-          {status === "placing" ? "Placing order…" : `Place order · ${formatMoney(subtotal + tax)}`}
+          {status === "placing" ? "Placing order…" : `Place order · ${formatMoney(taxable + tax)}`}
         </button>
       </form>
 
@@ -158,7 +163,16 @@ export default function CheckoutForm() {
           ))}
         </ul>
         <div className="mt-5 border-t border-ink/8 pt-4">
-          <OrderTotals subtotal={subtotal} />
+          <CouponField
+            items={items.map((i) => ({ variantId: i.variantId, quantity: i.quantity }))}
+            token={token ?? undefined}
+            applied={coupon}
+            onApplied={setCoupon}
+            onCleared={() => setCoupon(null)}
+          />
+        </div>
+        <div className="mt-4 border-t border-ink/8 pt-4">
+          <OrderTotals subtotal={subtotal} discount={coupon?.discount ?? 0} />
         </div>
       </aside>
     </div>

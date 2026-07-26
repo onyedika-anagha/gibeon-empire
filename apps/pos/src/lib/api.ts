@@ -67,6 +67,13 @@ export const api = {
   terminalStatus: (reference: string) =>
     req<TerminalStatusResult>(`/terminals/${encodeURIComponent(reference)}/status`),
 
+  // Preview a coupon against the current cart (server computes the discount).
+  validateCoupon: (code: string, items: Array<{ variantId: string; quantity: number }>) =>
+    req<{ code: string; discount: number; subtotal: number }>(`/coupons/validate`, {
+      method: "POST",
+      body: JSON.stringify({ code, items }),
+    }),
+
   pull: () => req<{ syncedAt: string; vatRateBps: number; variants: SnapshotVariant[] }>(`/sync/pull`, { method: "POST" }),
   push: (sales: OutboxSale[]) =>
     req<ReconciliationResult[]>(`/sync/push`, {
@@ -77,6 +84,7 @@ export const api = {
           items: s.items.map((i) => ({ variantId: i.variantId, quantity: i.quantity, unitPrice: i.unitPrice })),
           method: s.method,
           discountTotal: s.discountTotal,
+          couponCode: s.couponCode,
           soldAt: s.soldAt,
         })),
       }),

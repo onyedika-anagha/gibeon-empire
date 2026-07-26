@@ -6,6 +6,7 @@ import {
   IsIn,
   IsInt,
   IsOptional,
+  IsString,
   IsUUID,
   Min,
   ValidateNested,
@@ -39,6 +40,12 @@ export class CreateOrderDto {
   @IsInt()
   @Min(0)
   discountTotal?: number;
+
+  // A coupon code entered at checkout. The discount is computed server-side —
+  // the client never dictates a coupon's value.
+  @IsOptional()
+  @IsString()
+  couponCode?: string;
 }
 
 export class AdvanceOrderDto {

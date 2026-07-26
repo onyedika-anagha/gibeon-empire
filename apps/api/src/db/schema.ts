@@ -42,6 +42,8 @@ export const reviewResolutionEnum = pgEnum("review_resolution", [
   "REFUND",
 ]);
 export const posSaleStatusEnum = pgEnum("pos_sale_status", ["COMMITTED", "FLAGGED"]);
+export const couponTypeEnum = pgEnum("coupon_type", ["PERCENTAGE", "FIXED"]);
+export const couponScopeEnum = pgEnum("coupon_scope", ["ORDER", "PRODUCT", "CATEGORY"]);
 
 export type Role = (typeof roleEnum.enumValues)[number];
 export type Channel = (typeof channelEnum.enumValues)[number];
@@ -49,6 +51,8 @@ export type OrderState = (typeof orderStateEnum.enumValues)[number];
 export type PaymentMethod = (typeof paymentMethodEnum.enumValues)[number];
 export type PaymentProvider = (typeof paymentProviderEnum.enumValues)[number];
 export type PaymentStatus = (typeof paymentStatusEnum.enumValues)[number];
+export type CouponType = (typeof couponTypeEnum.enumValues)[number];
+export type CouponScope = (typeof couponScopeEnum.enumValues)[number];
 
 // ── People ────────────────────────────────────────────────────────────
 export const staff = pgTable("staff", {
@@ -283,6 +287,48 @@ export const posSales = pgTable("pos_sales", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ── Coupons ───────────────────────────────────────────────────────────
+// Discount codes. Values are stored per type: PERCENTAGE = basis points
+// (2000 = 20%), FIXED = minor units (kobo). Codes are stored uppercase and
+// matched case-insensitively; scope narrows which line items count.
+export const coupons = pgTable("coupons", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  code: text("code").notNull().unique(),
+  type: couponTypeEnum("type").notNull(),
+  value: integer("value").notNull(),
+  scope: couponScopeEnum("scope").notNull().default("ORDER"),
+  // PRODUCT scope → product ids; CATEGORY scope → category names. Empty for ORDER.
+  scopeValues: jsonb("scope_values").$type<string[]>().notNull().default([]),
+  minSubtotal: integer("min_subtotal").notNull().default(0), // minor units
+  maxDiscount: integer("max_discount"), // cap for % coupons, minor units; null = no cap
+  usageLimit: integer("usage_limit"), // total redemptions; null = unlimited
+  perCustomerLimit: integer("per_customer_limit"), // per customer; null = unlimited
+  timesRedeemed: integer("times_redeemed").notNull().default(0),
+  startsAt: timestamp("starts_at"),
+  endsAt: timestamp("ends_at"),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const couponRedemptions = pgTable(
+  "coupon_redemptions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    couponId: uuid("coupon_id")
+      .notNull()
+      .references(() => coupons.id, { onDelete: "cascade" }),
+    orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
+    customerId: uuid("customer_id").references(() => customers.id),
+    discount: integer("discount").notNull(), // minor units actually applied
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("coupon_redemptions_coupon_idx").on(t.couponId),
+    index("coupon_redemptions_customer_idx").on(t.customerId),
+  ],
+);
+
 export const schema = {
   staff,
   customers,
@@ -301,4 +347,6 @@ export const schema = {
   auditLogs,
   oversellReviews,
   posSales,
+  coupons,
+  couponRedemptions,
 };

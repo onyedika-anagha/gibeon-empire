@@ -116,6 +116,37 @@ export interface Review {
   createdAt: string;
 }
 
+export type CouponType = "PERCENTAGE" | "FIXED";
+export type CouponScope = "ORDER" | "PRODUCT" | "CATEGORY";
+export interface Coupon {
+  id: string;
+  code: string;
+  type: CouponType;
+  value: number; // PERCENTAGE → basis points; FIXED → minor units
+  scope: CouponScope;
+  scopeValues: string[];
+  minSubtotal: number;
+  maxDiscount: number | null;
+  usageLimit: number | null;
+  perCustomerLimit: number | null;
+  timesRedeemed: number;
+  startsAt: string | null;
+  endsAt: string | null;
+  active: boolean;
+  createdAt: string;
+}
+export interface CouponInput {
+  code?: string;
+  type: CouponType;
+  value: number;
+  scope?: CouponScope;
+  scopeValues?: string[];
+  minSubtotal?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  perCustomerLimit?: number;
+}
+
 export type StaffLoginChallenge =
   | { status: "TOTP_ENROLL"; challenge: string; otpauthUrl: string; qrDataUrl: string }
   | { status: "TOTP_REQUIRED"; challenge: string };
@@ -207,6 +238,11 @@ export const api = {
   getProvider: () => req<{ provider: "PAYSTACK" | "FLUTTERWAVE" }>(`/payments/provider`),
   setProvider: (provider: "PAYSTACK" | "FLUTTERWAVE") =>
     req<{ provider: string }>(`/payments/provider`, { method: "PATCH", body: JSON.stringify({ provider }) }),
+
+  coupons: () => req<Coupon[]>(`/coupons`),
+  createCoupon: (body: CouponInput) => req<Coupon>(`/coupons`, { method: "POST", body: JSON.stringify(body) }),
+  updateCoupon: (id: string, body: Partial<CouponInput> & { active?: boolean }) =>
+    req<Coupon>(`/coupons/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
   reviews: () => req<Review[]>(`/reviews`),
   resolveReview: (id: string, resolution: "BACKORDER" | "SUBSTITUTION" | "REFUND") =>

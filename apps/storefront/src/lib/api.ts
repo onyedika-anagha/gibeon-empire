@@ -138,9 +138,22 @@ export const api = {
       contactEmail?: string;
       items: Array<{ variantId: string; quantity: number }>;
       discountTotal?: number;
+      couponCode?: string;
     },
     token?: string,
   ) => req<Order>(`/orders`, { method: "POST", body: JSON.stringify(body), token }),
+
+  // Preview a coupon against the cart. Server computes the discount; a token,
+  // when present, enforces the per-customer limit.
+  validateCoupon: (
+    body: { code: string; items: Array<{ variantId: string; quantity: number }> },
+    token?: string,
+  ) =>
+    req<{ code: string; discount: number; subtotal: number }>(`/coupons/validate`, {
+      method: "POST",
+      body: JSON.stringify(body),
+      token,
+    }),
   myOrders: (token: string) => req<Order[]>(`/orders`, { token }),
   trackOrder: (reference: string, token: string) =>
     req<Order>(`/orders/${reference}`, { token }),

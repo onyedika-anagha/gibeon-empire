@@ -5,6 +5,7 @@ import { authenticator } from "otplib";
 import { AuthService } from "./auth.service";
 import type { DrizzleDB } from "../db/db.module";
 import { AuditService } from "../common/audit/audit.service";
+import { OrdersService } from "../orders/orders.service";
 
 jest.mock("bcrypt");
 
@@ -32,6 +33,7 @@ describe("AuthService", () => {
     verify: jest.fn(),
   } as unknown as JwtService;
   const audit = { record: jest.fn() } as unknown as AuditService;
+  const orders = { linkGuestOrders: jest.fn().mockResolvedValue(0) } as unknown as OrdersService;
 
   beforeEach(() => jest.clearAllMocks());
 
@@ -39,17 +41,26 @@ describe("AuthService", () => {
     it("returns an access token on valid credentials", async () => {
       const { db } = makeDb([{ id: "c1", email: "a@b.com", passwordHash: "hash" }]);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
 
       await expect(service.loginCustomer({ email: "a@b.com", password: "pw" })).resolves.toEqual({
         accessToken: "signed.jwt.token",
       });
     });
 
+    it("claims matching guest orders on login", async () => {
+      const { db } = makeDb([{ id: "c1", email: "a@b.com", passwordHash: "hash" }]);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
+
+      await service.loginCustomer({ email: "a@b.com", password: "pw" });
+      expect(orders.linkGuestOrders).toHaveBeenCalledWith("c1", "a@b.com");
+    });
+
     it("rejects a wrong password", async () => {
       const { db } = makeDb([{ id: "c1", email: "a@b.com", passwordHash: "hash" }]);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
 
       await expect(
         service.loginCustomer({ email: "a@b.com", password: "bad" }),
@@ -58,7 +69,7 @@ describe("AuthService", () => {
 
     it("rejects an unknown email", async () => {
       const { db } = makeDb([]);
-      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
       await expect(
         service.loginCustomer({ email: "x@y.com", password: "pw" }),
       ).rejects.toThrow(UnauthorizedException);
@@ -71,7 +82,7 @@ describe("AuthService", () => {
         { id: "s1", email: "staff@x.com", passwordHash: "hash", role: "ADMIN", totpEnabledAt: null },
       ]);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
 
       const res = await service.loginStaff({ email: "staff@x.com", password: "pw" });
       expect(res.status).toBe("TOTP_ENROLL");
@@ -84,7 +95,7 @@ describe("AuthService", () => {
         { id: "s1", email: "staff@x.com", passwordHash: "hash", role: "CASHIER", totpEnabledAt: new Date() },
       ]);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
 
       await expect(service.loginStaff({ email: "staff@x.com", password: "pw" })).resolves.toEqual({
         status: "TOTP_REQUIRED",
@@ -97,7 +108,7 @@ describe("AuthService", () => {
         { id: "s1", email: "staff@x.com", passwordHash: "hash", role: "ADMIN", totpEnabledAt: new Date() },
       ]);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
       const res = await service.loginStaff({ email: "staff@x.com", password: "pw" });
       expect(res).not.toHaveProperty("accessToken");
     });
@@ -109,7 +120,7 @@ describe("AuthService", () => {
       const code = authenticator.generate(secret);
       const { db } = makeDb([{ id: "s1", email: "staff@x.com", role: "ADMIN", totpSecret: secret, totpEnabledAt: new Date() }]);
       (jwt.verify as jest.Mock).mockReturnValue({ sub: "s1", purpose: "verify" });
-      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
 
       await expect(service.verifyStaffTotp({ challenge: "c", code })).resolves.toEqual({ accessToken: "signed.jwt.token" });
     });
@@ -118,7 +129,7 @@ describe("AuthService", () => {
       const secret = authenticator.generateSecret();
       const { db } = makeDb([{ id: "s1", email: "staff@x.com", role: "ADMIN", totpSecret: secret, totpEnabledAt: new Date() }]);
       (jwt.verify as jest.Mock).mockReturnValue({ sub: "s1", purpose: "verify" });
-      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
       await expect(service.verifyStaffTotp({ challenge: "c", code: "000000" })).rejects.toThrow(UnauthorizedException);
     });
 
@@ -127,7 +138,7 @@ describe("AuthService", () => {
       (jwt.verify as jest.Mock).mockImplementation(() => {
         throw new Error("jwt expired");
       });
-      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
       await expect(service.verifyStaffTotp({ challenge: "bad", code: "123456" })).rejects.toThrow(UnauthorizedException);
     });
   });
@@ -135,14 +146,14 @@ describe("AuthService", () => {
   describe("requestPasswordReset", () => {
     it("does not reveal whether an email exists (no insert, empty result)", async () => {
       const { db, insert } = makeDb([]);
-      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
       await expect(service.requestPasswordReset("nobody@x.com")).resolves.toEqual({});
       expect(insert).not.toHaveBeenCalled();
     });
 
     it("creates a reset token for a known customer", async () => {
       const { db, insert } = makeDb([{ id: "c1" }]);
-      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit);
+      const service = new AuthService(db as unknown as DrizzleDB, jwt, audit, orders);
       const res = await service.requestPasswordReset("a@b.com");
       expect(res.resetToken).toEqual(expect.any(String));
       expect(insert).toHaveBeenCalledTimes(1);

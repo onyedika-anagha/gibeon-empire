@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { db, type OutboxSale, type SnapshotVariant } from "@/lib/db";
 import { recordSale } from "@/lib/sync";
+import { api } from "@/lib/api";
 import { payViaTerminal, type TerminalOutcome } from "@/lib/terminal";
 import { usePos } from "@/hooks/usePos";
 import { useBarcode } from "@/hooks/useBarcode";
@@ -26,6 +27,7 @@ export function useSale() {
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [discount, setDiscount] = useState(0);
+  const [coupon, setCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [method, setMethod] = useState<OutboxSale["method"]>("CASH");
   const [receipt, setReceipt] = useState<OutboxSale | null>(null);
   const [flash, setFlash] = useState("");
@@ -86,9 +88,12 @@ export function useSale() {
   }, [catalogue, query]);
 
   const subtotal = cart.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
+  // Manual discount + any applied coupon, capped at the subtotal.
+  const discountTotal = Math.min(subtotal, discount + (coupon?.discount ?? 0));
   const taxRate = getVatRateBps();
-  const taxTotal = vatOn(Math.max(0, subtotal - discount), taxRate);
-  const total = Math.max(0, subtotal - discount) + taxTotal;
+  const taxable = Math.max(0, subtotal - discountTotal);
+  const taxTotal = vatOn(taxable, taxRate);
+  const total = taxable + taxTotal;
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
   const setQty = useCallback((variantId: string, qty: number) => {
@@ -110,15 +115,16 @@ export function useSale() {
         unitPrice: c.unitPrice,
         name: `${c.name} — ${c.size}/${c.color}`,
       }));
-      const sale = await recordSale(items, method, discount, reference);
+      const sale = await recordSale(items, method, discountTotal, reference, coupon?.code);
       setReceipt(sale);
       setCart([]);
       setDiscount(0);
+      setCoupon(null);
       setConfirming(false);
       void syncNow(); // best-effort push; queued if offline
       await reload();
     },
-    [cart, method, discount, syncNow, reload],
+    [cart, method, discountTotal, coupon, syncNow, reload],
   );
 
   // Card, online: push the amount to the terminal and wait for the customer to pay.
@@ -172,6 +178,22 @@ export function useSale() {
     setConfirming(true);
   }, []);
 
+  // Coupons are validated online (server computes the discount). Offline tills
+  // can't check usage limits, so they fall back to the manual discount field.
+  const applyCoupon = useCallback(
+    async (code: string) => {
+      if (cart.length === 0) throw new Error("Add items before applying a coupon");
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        throw new Error("You're offline — coupons need a connection");
+      }
+      const items = cart.map((c) => ({ variantId: c.variantId, quantity: c.quantity }));
+      const res = await api.validateCoupon(code, items);
+      setCoupon({ code: res.code, discount: res.discount });
+    },
+    [cart],
+  );
+  const removeCoupon = useCallback(() => setCoupon(null), []);
+
   return {
     catalogue,
     query,
@@ -184,6 +206,9 @@ export function useSale() {
     setQty,
     discount,
     setDiscount,
+    coupon,
+    applyCoupon,
+    removeCoupon,
     method,
     setMethod,
     subtotal,

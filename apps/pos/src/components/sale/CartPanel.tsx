@@ -5,18 +5,22 @@ import type { CartLine } from "@/hooks/useSale";
 import { METHODS } from "@/hooks/useSale";
 import { formatMoney } from "@/lib/format";
 import { formatRate } from "@/lib/vat";
+import CouponInput from "./CouponInput";
 
 interface Props {
   cart: CartLine[];
   count: number;
   subtotal: number;
   discount: number;
+  coupon: { code: string; discount: number } | null;
   taxTotal: number;
   taxRate: number;
   total: number;
   method: OutboxSale["method"];
   onQty: (variantId: string, qty: number) => void;
   onDiscount: (minor: number) => void;
+  onApplyCoupon: (code: string) => Promise<void>;
+  onRemoveCoupon: () => void;
   onMethod: (m: OutboxSale["method"]) => void;
   onComplete: () => void;
 }
@@ -26,12 +30,15 @@ export default function CartPanel({
   count,
   subtotal,
   discount,
+  coupon,
   taxTotal,
   taxRate,
   total,
   method,
   onQty,
   onDiscount,
+  onApplyCoupon,
+  onRemoveCoupon,
   onMethod,
   onComplete,
 }: Props) {
@@ -98,6 +105,8 @@ export default function CartPanel({
           />
         </label>
 
+        <CouponInput applied={coupon} onApply={onApplyCoupon} onRemove={onRemoveCoupon} />
+
         <div className="mt-3 flex justify-between text-sm text-muted">
           <span>Subtotal</span>
           <span className="tnum">{formatMoney(subtotal)}</span>
@@ -106,6 +115,12 @@ export default function CartPanel({
           <div className="mt-1 flex justify-between text-sm text-muted">
             <span>Discount</span>
             <span className="tnum text-danger">−{formatMoney(discount)}</span>
+          </div>
+        )}
+        {coupon && (
+          <div className="mt-1 flex justify-between text-sm text-muted">
+            <span>Coupon ({coupon.code})</span>
+            <span className="tnum text-danger">−{formatMoney(coupon.discount)}</span>
           </div>
         )}
         {taxTotal > 0 && (

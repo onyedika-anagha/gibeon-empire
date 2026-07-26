@@ -14,6 +14,7 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { DRIZZLE, type DrizzleDB } from "../db/db.module";
 import { customers, passwordResets, staff } from "../db/schema";
 import { AuditService } from "../common/audit/audit.service";
+import { OrdersService } from "../orders/orders.service";
 import type { JwtPayload, StaffLoginChallenge, TotpChallengePayload } from "./auth.types";
 import type { ChangePasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from "./dto/auth.dto";
 
@@ -31,6 +32,7 @@ export class AuthService {
     @Inject(DRIZZLE) private readonly db: DrizzleDB,
     private readonly jwt: JwtService,
     private readonly audit: AuditService,
+    private readonly orders: OrdersService,
   ) {}
 
   private sign(payload: JwtPayload): { accessToken: string } {
@@ -59,6 +61,8 @@ export class AuthService {
       })
       .returning({ id: customers.id, email: customers.email });
 
+    // Claim any orders they placed as a guest with this email before signing up.
+    await this.orders.linkGuestOrders(customer.id, customer.email);
     return this.sign({ sub: customer.id, type: "customer", email: customer.email });
   }
 
@@ -70,6 +74,8 @@ export class AuthService {
     if (!customer?.passwordHash || !(await bcrypt.compare(dto.password, customer.passwordHash))) {
       throw new UnauthorizedException("Invalid credentials");
     }
+    // Also link on login — catches guest orders placed after they registered.
+    await this.orders.linkGuestOrders(customer.id, customer.email);
     return this.sign({ sub: customer.id, type: "customer", email: customer.email });
   }
 

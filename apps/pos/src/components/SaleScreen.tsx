@@ -29,9 +29,12 @@ export default function SaleScreen() {
         taxTotal={s.taxTotal}
         taxRate={s.taxRate}
         total={s.total}
+        coupon={s.coupon}
         method={s.method}
         onQty={s.setQty}
         onDiscount={s.setDiscount}
+        onApplyCoupon={s.applyCoupon}
+        onRemoveCoupon={s.removeCoupon}
         onMethod={s.setMethod}
         onComplete={s.complete}
       />
