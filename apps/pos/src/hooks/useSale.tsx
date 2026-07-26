@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { db, type OutboxSale, type SnapshotVariant } from "@/lib/db";
 import { recordSale } from "@/lib/sync";
+import { payViaTerminal, type TerminalOutcome } from "@/lib/terminal";
 import { usePos } from "@/hooks/usePos";
 import { useBarcode } from "@/hooks/useBarcode";
 import { getVatRateBps, vatOn } from "@/lib/vat";
@@ -29,6 +30,9 @@ export function useSale() {
   const [receipt, setReceipt] = useState<OutboxSale | null>(null);
   const [flash, setFlash] = useState("");
   const [confirming, setConfirming] = useState(false);
+  // Card push-to-terminal state; null when no terminal payment is in flight.
+  const [terminal, setTerminal] = useState<{ status: "waiting" | TerminalOutcome } | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const reload = useCallback(async () => setCatalogue(await db.catalogue.toArray()), []);
   useEffect(() => {
@@ -95,35 +99,78 @@ export function useSale() {
     );
   }, []);
 
-  // Writes the sale to the outbox and resets the till.
-  const finalize = useCallback(async () => {
-    if (cart.length === 0) return;
-    const items = cart.map((c) => ({
-      variantId: c.variantId,
-      quantity: c.quantity,
-      unitPrice: c.unitPrice,
-      name: `${c.name} — ${c.size}/${c.color}`,
-    }));
-    const sale = await recordSale(items, method, discount);
-    setReceipt(sale);
-    setCart([]);
-    setDiscount(0);
-    setConfirming(false);
-    void syncNow(); // best-effort push; queued if offline
-    await reload();
-  }, [cart, method, discount, syncNow, reload]);
+  // Writes the sale to the outbox and resets the till. When the sale was paid via
+  // the terminal, reuse its reference as the outbox clientId so the two stay linked.
+  const finalize = useCallback(
+    async (reference?: string) => {
+      if (cart.length === 0) return;
+      const items = cart.map((c) => ({
+        variantId: c.variantId,
+        quantity: c.quantity,
+        unitPrice: c.unitPrice,
+        name: `${c.name} — ${c.size}/${c.color}`,
+      }));
+      const sale = await recordSale(items, method, discount, reference);
+      setReceipt(sale);
+      setCart([]);
+      setDiscount(0);
+      setConfirming(false);
+      void syncNow(); // best-effort push; queued if offline
+      await reload();
+    },
+    [cart, method, discount, syncNow, reload],
+  );
 
-  // Cash is in hand, so it completes straight away. Electronic methods
-  // (transfer/card/split) get an explicit "payment received" confirmation
-  // first — the cashier verifies the money actually landed.
+  // Card, online: push the amount to the terminal and wait for the customer to pay.
+  // A failed push (offline/not configured) falls back to manual confirmation; a
+  // cancel/timeout leaves the modal open so the cashier can retry or go manual.
+  const payCard = useCallback(async () => {
+    if (cart.length === 0) return;
+    const reference = crypto.randomUUID();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setTerminal({ status: "waiting" });
+    try {
+      const outcome = await payViaTerminal(reference, total, { signal: controller.signal });
+      if (outcome === "processed") {
+        setTerminal(null);
+        await finalize(reference);
+      } else {
+        setTerminal({ status: outcome });
+      }
+    } catch {
+      setTerminal(null);
+      setConfirming(true); // push never landed → manual fallback
+    }
+  }, [cart.length, total, finalize]);
+
+  // Cash is in hand, so it completes straight away. Card goes to the terminal when
+  // online; everything else (and offline card) gets an explicit "payment received"
+  // confirmation where the cashier verifies the money actually landed.
   const complete = useCallback(() => {
     if (cart.length === 0) return;
     if (method === "CASH") {
       void finalize();
       return;
     }
+    if (method === "CARD" && typeof navigator !== "undefined" && navigator.onLine) {
+      void payCard();
+      return;
+    }
     setConfirming(true);
-  }, [cart.length, method, finalize]);
+  }, [cart.length, method, finalize, payCard]);
+
+  const cancelTerminal = useCallback(() => {
+    abortRef.current?.abort();
+    setTerminal(null);
+  }, []);
+
+  // Give up on the terminal and confirm the card manually instead.
+  const terminalToManual = useCallback(() => {
+    abortRef.current?.abort();
+    setTerminal(null);
+    setConfirming(true);
+  }, []);
 
   return {
     catalogue,
@@ -147,6 +194,10 @@ export function useSale() {
     confirming,
     confirmPayment: finalize,
     cancelConfirm: () => setConfirming(false),
+    terminal,
+    retryTerminal: payCard,
+    cancelTerminal,
+    terminalToManual,
     receipt,
     clearReceipt: () => setReceipt(null),
   };

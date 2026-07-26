@@ -93,6 +93,13 @@ export interface AdminOrder {
   total: number;
   createdAt: string;
 }
+export interface OrderReportRow {
+  period: string; // ISO timestamp, truncated to day or month
+  orderCount: number;
+  subtotal: number;
+  taxTotal: number;
+  total: number;
+}
 export interface StaffMember {
   id: string;
   email: string;
@@ -183,6 +190,8 @@ export const api = {
     req<AdminOrder[]>(`/orders/admin/all${state ? `?state=${state}` : ""}`),
   advanceOrder: (id: string, to: OrderState) =>
     req(`/orders/${id}/advance`, { method: "POST", body: JSON.stringify({ to }) }),
+  orderReport: (range: "week" | "month" | "year") =>
+    req<OrderReportRow[]>(`/orders/admin/report?range=${range}`),
 
   staff: () => req<StaffMember[]>(`/staff`),
   createStaff: (body: { email: string; name: string; password: string; role: Role }) =>

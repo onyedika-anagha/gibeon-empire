@@ -33,6 +33,13 @@ export class OrdersController {
     return this.orders.listAll(state);
   }
 
+  // Revenue/VAT trend for dashboard charts and tax remittance (PRD Req. 41).
+  @Roles("ADMIN", "STORE_MANAGER")
+  @Get("admin/report")
+  report(@Query("range") range: "week" | "month" | "year" = "month") {
+    return this.orders.report(range);
+  }
+
   // Authenticated order tracking (PRD Req. 8) — customer sees own, staff any.
   @Get(":reference")
   track(@Param("reference") reference: string, @CurrentUser() user: AuthUser) {

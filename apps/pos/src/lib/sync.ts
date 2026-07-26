@@ -23,13 +23,14 @@ export async function recordSale(
   items: OutboxItem[],
   method: OutboxSale["method"],
   discountTotal: number,
+  clientId: string = crypto.randomUUID(),
 ): Promise<OutboxSale> {
   const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
   const taxRate = getVatRateBps();
   const taxable = Math.max(0, subtotal - discountTotal);
   const taxTotal = vatOn(taxable, taxRate);
   const sale: OutboxSale = {
-    clientId: crypto.randomUUID(),
+    clientId,
     items,
     method,
     discountTotal,

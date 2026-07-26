@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import { DRIZZLE, type DrizzleDB } from "../db/db.module";
 import { customers, orderEvents, orderItems, orders, orderStateEnum, payments, products, variants } from "../db/schema";
 import type { Channel, OrderState } from "../db/schema";
@@ -184,6 +184,41 @@ export class OrdersService {
       .where(eq(orders.customerId, customerId))
       .orderBy(desc(orders.createdAt));
     return rows;
+  }
+
+  /**
+   * Revenue/VAT trend for the dashboard and remittance reporting (PRD Req. 41).
+   * Unpaid (RECEIVED) orders are excluded — nothing is owed to the taxman until
+   * payment actually lands.
+   */
+  async report(range: "week" | "month" | "year") {
+    const now = new Date();
+    if (range === "year") {
+      const since = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+      return this.aggregate("month", since);
+    }
+    const since = new Date(now);
+    since.setDate(since.getDate() - (range === "week" ? 7 : 30));
+    return this.aggregate("day", since);
+  }
+
+  private async aggregate(granularity: "day" | "month", since: Date) {
+    const bucket =
+      granularity === "day"
+        ? sql`date_trunc('day', ${orders.createdAt})::text`
+        : sql`date_trunc('month', ${orders.createdAt})::text`;
+    return this.db
+      .select({
+        period: sql<string>`${bucket}`,
+        orderCount: sql<number>`count(*)::int`,
+        subtotal: sql<number>`coalesce(sum(${orders.subtotal}), 0)::int`,
+        taxTotal: sql<number>`coalesce(sum(${orders.taxTotal}), 0)::int`,
+        total: sql<number>`coalesce(sum(${orders.total}), 0)::int`,
+      })
+      .from(orders)
+      .where(and(ne(orders.state, "RECEIVED"), gte(orders.createdAt, since)))
+      .groupBy(bucket)
+      .orderBy(bucket);
   }
 
   private async customerEmail(customerId: string | null): Promise<string | undefined> {

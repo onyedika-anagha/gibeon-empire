@@ -38,6 +38,14 @@ export type ReconciliationResult =
   | { clientId: string; status: "flagged_oversell"; orderReference: string }
   | { clientId: string; status: "duplicate_ignored" };
 
+export type TerminalPaymentMethod = "CARD_PURCHASE" | "POS_TRANSFER" | "ANY";
+export type TerminalStatusResult = {
+  reference: string;
+  status: "pending" | "processed" | "cancelled";
+  amountPaid?: number;
+  paymentMethod?: string;
+};
+
 export type StaffLoginChallenge =
   | { status: "TOTP_ENROLL"; challenge: string; otpauthUrl: string; qrDataUrl: string }
   | { status: "TOTP_REQUIRED"; challenge: string };
@@ -48,6 +56,16 @@ export const api = {
   verifyTotp: (challenge: string, code: string) =>
     req<{ accessToken: string }>(`/auth/staff/totp/verify`, { method: "POST", body: JSON.stringify({ challenge, code }) }),
   me: () => req<{ id: string; email: string; type: string; role?: string }>(`/auth/me`),
+
+  // Push-to-terminal card payments (Moniepoint ERP). reference = the sale clientId,
+  // so the till reuses one id across the push, the poll, and the outbox row.
+  pushToTerminal: (reference: string, amount: number, paymentMethod: TerminalPaymentMethod = "ANY") =>
+    req<{ reference: string; accepted: boolean }>(`/terminals/push`, {
+      method: "POST",
+      body: JSON.stringify({ reference, amount, paymentMethod }),
+    }),
+  terminalStatus: (reference: string) =>
+    req<TerminalStatusResult>(`/terminals/${encodeURIComponent(reference)}/status`),
 
   pull: () => req<{ syncedAt: string; vatRateBps: number; variants: SnapshotVariant[] }>(`/sync/pull`, { method: "POST" }),
   push: (sales: OutboxSale[]) =>

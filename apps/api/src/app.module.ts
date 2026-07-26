@@ -16,6 +16,7 @@ import { PaymentsModule } from "./payments/payments.module";
 import { StaffModule } from "./staff/staff.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { SyncModule } from "./sync/sync.module";
+import { TerminalsModule } from "./terminals/terminals.module";
 import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { RolesGuard } from "./auth/guards/roles.guard";
 
@@ -43,6 +44,7 @@ import { RolesGuard } from "./auth/guards/roles.guard";
     StaffModule,
     ReviewsModule,
     SyncModule,
+    TerminalsModule,
   ],
   providers: [
     // Rate limiter runs first.

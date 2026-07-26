@@ -5,6 +5,8 @@ import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui";
 import Sparkline from "@/components/Sparkline";
+import SalesChart from "@/components/dashboard/SalesChart";
+import VatReport from "@/components/dashboard/VatReport";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +67,8 @@ export default function Overview() {
           </Card>
         ))}
       </div>
+      <SalesChart />
+      <VatReport />
     </>
   );
 }
