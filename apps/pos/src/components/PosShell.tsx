@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { usePos } from "@/hooks/usePos";
 import TopBar from "./TopBar";
 import LoginScreen from "./auth/LoginScreen";
+import InstallPrompt from "./InstallPrompt";
 
 export default function PosShell({ children }: { children: ReactNode }) {
   const { ready, token } = usePos();
@@ -21,10 +22,17 @@ export default function PosShell({ children }: { children: ReactNode }) {
         <span className="animate-pulse">Starting…</span>
       </div>
     );
-  if (!token) return <LoginScreen />;
+  if (!token)
+    return (
+      <>
+        <InstallPrompt />
+        <LoginScreen />
+      </>
+    );
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <InstallPrompt />
       <TopBar />
       <main className="flex min-h-0 flex-1 flex-col">{children}</main>
     </div>
