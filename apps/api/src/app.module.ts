@@ -21,17 +21,37 @@ import { CouponsModule } from "./coupons/coupons.module";
 import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { RolesGuard } from "./auth/guards/roles.guard";
 
+// BullMQ's Redis connection. Prefer REDIS_URL (Railway/managed) — parsed so the
+// password, rediss:// TLS, and Railway's IPv6 private network all work; falls
+// back to host/port for local dev. maxRetriesPerRequest:null is BullMQ's
+// requirement for blocking workers.
+function redisConnection() {
+  const url = process.env.REDIS_URL;
+  if (url) {
+    const u = new URL(url);
+    return {
+      host: u.hostname,
+      port: Number(u.port || 6379),
+      username: u.username || undefined,
+      password: u.password || undefined,
+      family: 0, // allow IPv6 — Railway's *.railway.internal resolves over v6
+      tls: u.protocol === "rediss:" ? {} : undefined,
+      maxRetriesPerRequest: null,
+    };
+  }
+  return {
+    host: process.env.REDIS_HOST ?? "localhost",
+    port: Number(process.env.REDIS_PORT ?? 6379),
+    maxRetriesPerRequest: null,
+  };
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     // Baseline rate limiting (PRD NFR: security). Login routes tighten this further.
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
-    BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST ?? "localhost",
-        port: Number(process.env.REDIS_PORT ?? 6379),
-      },
-    }),
+    BullModule.forRoot({ connection: redisConnection() }),
     DbModule,
     AuditModule,
     SettingsModule,
