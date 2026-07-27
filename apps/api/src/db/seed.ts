@@ -24,14 +24,32 @@ async function main() {
   await db.insert(settings).values({ key: "vatRateBps", value: 750 }).onConflictDoNothing();
 
   // One staff account per role.
-  const passwordHash = await bcrypt.hash("password123", 12);
-  const seedStaff: Array<{ email: string; name: string; role: Role }> = [
-    { email: "admin@gibeonempire.com", name: "Admin", role: "ADMIN" },
-    { email: "manager@gibeonempire.com", name: "Store Manager", role: "STORE_MANAGER" },
-    { email: "cashier@gibeonempire.com", name: "Cashier", role: "CASHIER" },
+  const seedStaff: Array<{ email: string; name: string; role: Role; password?: string }> = [
+    {
+      email: "admin@gibeonempire.com",
+      name: "Admin",
+      role: "ADMIN",
+      password: "admin@gibeonempire2026",
+    },
+    {
+      email: "manager@gibeonempire.com",
+      name: "Store Manager",
+      role: "STORE_MANAGER",
+      password: "manager@gibeonempire2026",
+    },
+    {
+      email: "cashier@gibeonempire.com",
+      name: "Cashier",
+      role: "CASHIER",
+      password: "cashier@gibeonempire2026",
+    },
   ];
   for (const s of seedStaff) {
-    await db.insert(staff).values({ ...s, passwordHash }).onConflictDoNothing();
+    const passwordHash = await bcrypt.hash(s.password ?? "defaultGibeonEmpire@2026", 12);
+    await db
+      .insert(staff)
+      .values({ ...s, passwordHash })
+      .onConflictDoNothing();
   }
 
   // eslint-disable-next-line no-console
