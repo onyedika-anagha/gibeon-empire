@@ -84,14 +84,16 @@ export default function Navbar() {
             >
               <IconUser className="h-[18px] w-[18px]" />
             </Link>
-            <IconButton label="Wishlist" className="hidden sm:inline-flex"><IconHeart className="h-[18px] w-[18px]" /></IconButton>
+            {/* <IconButton label="Wishlist" className="hidden sm:inline-flex"><IconHeart className="h-[18px] w-[18px]" /></IconButton> */}
             <button
               aria-label="Cart"
               onClick={() => setCartOpen(true)}
               className="group relative ml-1 inline-flex items-center gap-2 rounded-full bg-ink py-2 pl-3.5 pr-2 text-ivory transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-95"
             >
               <IconBag className="h-[18px] w-[18px]" />
-              <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-ivory/15 px-1.5 text-[11px]">{count}</span>
+              <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-ivory/15 px-1.5 text-[11px]">
+                {count}
+              </span>
             </button>
 
             <button
@@ -99,8 +101,12 @@ export default function Navbar() {
               onClick={() => setOpen((v) => !v)}
               className="relative ml-1 grid h-10 w-10 place-items-center rounded-full ring-1 ring-ink/10 md:hidden"
             >
-              <span className={`absolute h-px w-4 bg-ink transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "rotate-45" : "-translate-y-1"}`} />
-              <span className={`absolute h-px w-4 bg-ink transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "-rotate-45" : "translate-y-1"}`} />
+              <span
+                className={`absolute h-px w-4 bg-ink transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "rotate-45" : "-translate-y-1"}`}
+              />
+              <span
+                className={`absolute h-px w-4 bg-ink transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${open ? "-rotate-45" : "translate-y-1"}`}
+              />
             </button>
           </div>
         </nav>
@@ -141,7 +147,7 @@ export default function Navbar() {
             </motion.ul>
             <div className="mt-12 flex gap-6 text-sm text-stone">
               <a href="#">Account</a>
-              <a href="#">Wishlist</a>
+              {/* <a href="#">Wishlist</a> */}
               <a href="#">Stores</a>
             </div>
           </motion.div>
