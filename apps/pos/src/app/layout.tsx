@@ -27,11 +27,17 @@ export const viewport: Viewport = {
 // Set the theme class before first paint so there is no light/dark flash.
 const themeBoot = `(function(){try{var s=localStorage.getItem('gibeon.pos.theme');var d=s?s==='dark':matchMedia('(prefers-color-scheme:dark)').matches;if(d)document.documentElement.classList.add('dark')}catch(e){}})()`;
 
+// Chrome can fire beforeinstallprompt before React hydrates and useInstallPrompt's
+// listener attaches — the event never refires, so it'd be lost. Stash it on window
+// the instant it happens; the hook reads this on mount as a fallback.
+const installBoot = `(function(){window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__gibeonInstallPrompt=e;})})()`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
+        <script dangerouslySetInnerHTML={{ __html: installBoot }} />
       </head>
       <body>
         <ThemeProvider>

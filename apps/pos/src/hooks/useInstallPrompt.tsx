@@ -36,6 +36,11 @@ export function useInstallPrompt() {
     setIos(isIos());
     setDismissed(localStorage.getItem(DISMISS_KEY) === "1");
 
+    // layout.tsx's inline script may have already captured the event before
+    // this effect ran (see installBoot) — pick it up if so.
+    const stashed = (window as unknown as { __gibeonInstallPrompt?: BeforeInstallPromptEvent }).__gibeonInstallPrompt;
+    if (stashed) setDeferred(stashed);
+
     const onPrompt = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BeforeInstallPromptEvent);
