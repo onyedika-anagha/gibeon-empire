@@ -197,10 +197,14 @@ export class SyncService {
         amount: total,
         status: "CONFIRMED",
       });
-      await tx.update(orders).set({ state: "INVENTORY_UPDATED", updatedAt: new Date() }).where(eq(orders.id, order.id));
+      // A POS sale is a walk-in who leaves with the goods immediately — there's no
+      // picking/packing/dispatch to track, so the order completes on the spot
+      // rather than sitting in the web fulfilment pipeline.
+      await tx.update(orders).set({ state: "COMPLETED", updatedAt: new Date() }).where(eq(orders.id, order.id));
       await tx.insert(orderEvents).values([
         { orderId: order.id, fromState: "RECEIVED", toState: "PAYMENT_CONFIRMED", actor },
         { orderId: order.id, fromState: "PAYMENT_CONFIRMED", toState: "INVENTORY_UPDATED", actor },
+        { orderId: order.id, fromState: "INVENTORY_UPDATED", toState: "COMPLETED", actor },
       ]);
 
       const status = oversold ? "FLAGGED" : "COMMITTED";

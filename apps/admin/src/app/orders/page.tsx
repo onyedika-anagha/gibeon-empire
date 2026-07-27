@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, type AdminOrder, type OrderState } from "@/lib/api";
 import { Badge, Button, Card, PageHeader } from "@/components/ui";
 import { formatMoney } from "@/lib/format";
+import OrderDetailDialog from "@/components/orders/OrderDetailDialog";
 
 const NEXT: Partial<Record<OrderState, OrderState>> = {
   INVENTORY_UPDATED: "PICKING",
@@ -27,6 +28,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(true);
+  const [viewing, setViewing] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -99,13 +101,18 @@ export default function OrdersPage() {
                   </td>
                   <td className="px-5 py-3 text-ink">{formatMoney(o.total)}</td>
                   <td className="px-5 py-3 text-right">
-                    {NEXT[o.state] ? (
-                      <Button variant="ghost" onClick={() => advance(o)}>
-                        → {NEXT[o.state]!.replace(/_/g, " ")}
+                    <div className="flex items-center justify-end gap-2">
+                      <Button variant="ghost" onClick={() => setViewing(o.reference)}>
+                        View
                       </Button>
-                    ) : (
-                      <span className="text-xs text-slate">{o.state === "COMPLETED" ? "Done" : "Awaiting payment"}</span>
-                    )}
+                      {NEXT[o.state] ? (
+                        <Button variant="ghost" onClick={() => advance(o)}>
+                          → {NEXT[o.state]!.replace(/_/g, " ")}
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-slate">{o.state === "COMPLETED" ? "Done" : "Awaiting payment"}</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
@@ -113,6 +120,7 @@ export default function OrdersPage() {
           </tbody>
         </table>
       </Card>
+      <OrderDetailDialog reference={viewing} onOpenChange={(open) => !open && setViewing(null)} />
     </>
   );
 }

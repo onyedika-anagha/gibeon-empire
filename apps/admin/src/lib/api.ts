@@ -93,6 +93,26 @@ export interface AdminOrder {
   total: number;
   createdAt: string;
 }
+export interface AdminOrderItem {
+  id: string;
+  nameSnapshot: string;
+  unitPrice: number;
+  quantity: number;
+}
+export interface AdminOrderEvent {
+  id: string;
+  fromState: OrderState | null;
+  toState: OrderState;
+  actor: string;
+  createdAt: string;
+}
+export interface AdminOrderDetail extends AdminOrder {
+  subtotal: number;
+  discountTotal: number;
+  taxTotal: number;
+  items: AdminOrderItem[];
+  events: AdminOrderEvent[];
+}
 export interface OrderReportRow {
   period: string; // ISO timestamp, truncated to day or month
   orderCount: number;
@@ -219,6 +239,7 @@ export const api = {
 
   orders: (state?: string) =>
     req<AdminOrder[]>(`/orders/admin/all${state ? `?state=${state}` : ""}`),
+  order: (reference: string) => req<AdminOrderDetail>(`/orders/${reference}`),
   advanceOrder: (id: string, to: OrderState) =>
     req(`/orders/${id}/advance`, { method: "POST", body: JSON.stringify({ to }) }),
   orderReport: (range: "week" | "month" | "year") =>

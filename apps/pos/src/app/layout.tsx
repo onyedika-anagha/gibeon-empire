@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   title: "Gibeon Empire — POS",
   description: "Offline-first point of sale.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/logo/favicon.ico",
+    apple: "/logo/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
