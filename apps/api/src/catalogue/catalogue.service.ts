@@ -160,7 +160,7 @@ export class CatalogueService {
         return variant.id;
       }),
     );
-    return variantId;
+    return { id: variantId };
   }
 
   async updateVariant(id: string, dto: UpdateVariantDto, actor: string) {

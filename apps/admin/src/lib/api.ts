@@ -224,7 +224,7 @@ export const api = {
   updateProduct: (id: string, body: ProductPatch) =>
     req<AdminProduct>(`/products/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   createVariant: (productId: string, body: VariantInput) =>
-    req<string>(`/products/${productId}/variants`, { method: "POST", body: JSON.stringify(body) }),
+    req<{ id: string }>(`/products/${productId}/variants`, { method: "POST", body: JSON.stringify(body) }),
   updateVariant: (variantId: string, body: Partial<VariantInput>) =>
     req(`/products/variants/${variantId}`, { method: "PATCH", body: JSON.stringify(body) }),
   addProductMedia: (productId: string, body: { url: string; alt?: string }) =>
