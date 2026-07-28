@@ -246,20 +246,20 @@ export class OrdersService {
   async report(range: "week" | "month" | "year") {
     const now = new Date();
     if (range === "year") {
-      const since = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-      return this.aggregate("month", since);
+      const since = new Date(Date.UTC(now.getUTCFullYear() - 1, now.getUTCMonth(), 1));
+      return this.aggregate("month", since, now);
     }
     const since = new Date(now);
-    since.setDate(since.getDate() - (range === "week" ? 7 : 30));
-    return this.aggregate("day", since);
+    since.setUTCDate(since.getUTCDate() - (range === "week" ? 7 : 30));
+    return this.aggregate("day", since, now);
   }
 
-  private async aggregate(granularity: "day" | "month", since: Date) {
+  private async aggregate(granularity: "day" | "month", since: Date, until: Date) {
     const bucket =
       granularity === "day"
         ? sql`date_trunc('day', ${orders.createdAt})::text`
         : sql`date_trunc('month', ${orders.createdAt})::text`;
-    return this.db
+    const rows = await this.db
       .select({
         period: sql<string>`${bucket}`,
         orderCount: sql<number>`count(*)::int`,
@@ -271,6 +271,36 @@ export class OrdersService {
       .where(and(ne(orders.state, "RECEIVED"), gte(orders.createdAt, since)))
       .groupBy(bucket)
       .orderBy(bucket);
+    return this.fillGaps(granularity, since, until, rows);
+  }
+
+  /**
+   * The query above only returns buckets that had at least one order, so a slow
+   * day/month is silently missing instead of showing 0 — which draws chart bars
+   * next to each other as if they were consecutive periods. Fill the gaps.
+   */
+  private fillGaps(
+    granularity: "day" | "month",
+    since: Date,
+    until: Date,
+    rows: { period: string; orderCount: number; subtotal: number; taxTotal: number; total: number }[],
+  ) {
+    const key = (d: Date) => (granularity === "day" ? d.toISOString().slice(0, 10) : d.toISOString().slice(0, 7));
+    const byKey = new Map(rows.map((r) => [key(new Date(r.period)), r]));
+
+    const cursor =
+      granularity === "day"
+        ? new Date(Date.UTC(since.getUTCFullYear(), since.getUTCMonth(), since.getUTCDate()))
+        : new Date(Date.UTC(since.getUTCFullYear(), since.getUTCMonth(), 1));
+    const end = key(until);
+
+    const filled: typeof rows = [];
+    while (key(cursor) <= end) {
+      filled.push(byKey.get(key(cursor)) ?? { period: cursor.toISOString(), orderCount: 0, subtotal: 0, taxTotal: 0, total: 0 });
+      if (granularity === "day") cursor.setUTCDate(cursor.getUTCDate() + 1);
+      else cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+    return filled;
   }
 
   private async customerEmail(customerId: string | null): Promise<string | undefined> {
