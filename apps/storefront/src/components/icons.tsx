@@ -67,3 +67,29 @@ export const IconChat = ({ className }: P) => (
     <path d="M5 6h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H9l-4 3v-3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth={base} strokeLinejoin="round" />
   </svg>
 );
+
+export const IconPlus = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={base} strokeLinecap="round" />
+  </svg>
+);
+
+export const IconMail = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+    <path d="M4 6.5h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-11Z" stroke="currentColor" strokeWidth={base} strokeLinejoin="round" />
+    <path d="m4.5 7 7.5 6 7.5-6" stroke="currentColor" strokeWidth={base} strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const IconPin = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+    <path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21Z" stroke="currentColor" strokeWidth={base} strokeLinejoin="round" />
+    <circle cx="12" cy="9.5" r="2.4" stroke="currentColor" strokeWidth={base} />
+  </svg>
+);
+
+export const IconPhone = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+    <path d="M6 4h3l1.5 4L8.5 9.5a11 11 0 0 0 6 6L16 13.5l4 1.5v3a1.5 1.5 0 0 1-1.6 1.5A16 16 0 0 1 4.5 5.6 1.5 1.5 0 0 1 6 4Z" stroke="currentColor" strokeWidth={base} strokeLinejoin="round" />
+  </svg>
+);
